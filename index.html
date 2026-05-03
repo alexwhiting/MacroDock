@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10241a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MacroDock" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>MacroDock</title>
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="page-home">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <strong>MacroDock</strong>
+            <span>Nutrition + fitness</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a href="#dashboard" class="nav-item active">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1" />
+                <rect x="14" y="3" width="7" height="5" rx="1" />
+                <rect x="14" y="12" width="7" height="9" rx="1" />
+                <rect x="3" y="16" width="7" height="5" rx="1" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Dashboard</span>
+          </a>
+          <a href="./progress.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M7 16l4-4 4 4 6-6" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Progress</span>
+          </a>
+          <a href="./social.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Social</span>
+          </a>
+          <a href="./settings.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Settings</span>
+          </a>
+        </nav>
+
+        <section class="profile-card">
+          <span class="eyebrow">Daily target</span>
+          <strong id="targetCalories">2,150 kcal</strong>
+          <p id="profilePlanText">Balanced maintenance plan</p>
+        </section>
+      </aside>
+
+      <main class="main-content main-dashboard">
+        <header class="dashboard-top">
+          <div class="dashboard-date-row">
+            <input type="date" id="diaryDateInput" class="diary-date-input" aria-label="Choose diary date" />
+            <button type="button" id="dashboardDateButton" class="dashboard-date-button">
+              <span id="dashboardDateLabel">Today (May 3, 2026)</span>
+              <span class="date-chevron" aria-hidden="true"></span>
+            </button>
+          </div>
+        </header>
+
+        <div class="dashboard-sketch-column">
+          <section id="dashboard" class="dashboard-stack" aria-label="Daily dashboard">
+            <article class="panel calorie-dashboard-card calorie-panel">
+              <div class="calorie-dashboard-copy">
+                <span class="eyebrow">Calories remaining</span>
+                <p class="calorie-dashboard-big" id="remainingCalories">2,150</p>
+                <p class="calorie-dashboard-sub">
+                  <span id="consumedCalories">0</span> eaten - <span id="burnedCalories">0</span> burned
+                </p>
+              </div>
+              <div class="ring-wrap" aria-label="Calorie progress">
+                <svg class="progress-ring" viewBox="0 0 120 120" role="img">
+                  <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+                  <circle id="calorieRing" class="ring-progress" cx="60" cy="60" r="50"></circle>
+                </svg>
+                <span id="caloriePercent">0%</span>
+              </div>
+            </article>
+
+            <article class="panel macro-panel">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Macros</span>
+                  <h2>Daily Breakdown</h2>
+                </div>
+              </div>
+              <div id="macroBars" class="macro-list"></div>
+            </article>
+
+            <article class="panel log-panel" id="food">
+              <div class="section-heading">
+                <div>
+                  <span class="eyebrow">Logged meals</span>
+                  <h2>Food log</h2>
+                </div>
+              </div>
+              <div id="mealSections" class="meal-sections" aria-label="Meals by time of day"></div>
+            </article>
+          </section>
+        </div>
+
+        <div id="foodDialog" class="dialog-backdrop" aria-hidden="true">
+          <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="foodDialogTitle">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Food diary</span>
+                <h2 id="foodDialogTitle">Add food</h2>
+              </div>
+              <button id="closeFoodForm" class="icon-button" type="button" aria-label="Close food form">&times;</button>
+            </div>
+            <form id="foodForm" class="stacked-form">
+              <label>
+                Search food
+                <input id="foodSearch" type="search" autocomplete="off" placeholder="Search foods or brands" />
+              </label>
+              <p id="foodSearchStatus" class="food-search-status">Type at least 2 characters to search your food database.</p>
+              <div id="foodResults" class="food-results" aria-live="polite"></div>
+              <button id="useCustomFood" class="ghost-button" type="button">Add custom food</button>
+              <div id="customFoodFields" class="custom-food-fields" hidden>
+                <label>
+                  Food name
+                  <input id="customFoodName" type="text" placeholder="Example: Banana" />
+                </label>
+                <div class="two-column">
+                  <label>
+                    Calories
+                    <input id="customCalories" type="number" min="0" step="1" value="0" />
+                  </label>
+                  <label>
+                    Protein (g)
+                    <input id="customProtein" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Carbs (g)
+                    <input id="customCarbs" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Fat (g)
+                    <input id="customFat" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Fiber (g)
+                    <input id="customFiber" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Calcium (mg)
+                    <input id="customCalcium" type="number" min="0" step="1" value="0" />
+                  </label>
+                  <label>
+                    Iron (mg)
+                    <input id="customIron" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Vitamin C (mg)
+                    <input id="customVitaminC" type="number" min="0" step="1" value="0" />
+                  </label>
+                  <label>
+                    Potassium (mg)
+                    <input id="customPotassium" type="number" min="0" step="1" value="0" />
+                  </label>
+                </div>
+              </div>
+              <div class="two-column">
+                <label>
+                  Serving
+                  <input id="servingSize" type="number" min="0.25" step="0.25" value="1" />
+                </label>
+                <label>
+                  Meal
+                  <select id="mealSelect">
+                    <option>Breakfast</option>
+                    <option>Lunch</option>
+                    <option>Dinner</option>
+                    <option>Snack</option>
+                  </select>
+                </label>
+              </div>
+              <button class="primary-button" type="submit">Log food</button>
+            </form>
+          </section>
+        </div>
+
+        <section id="micros" class="micros-dashboard-stack">
+          <article class="panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Micronutrients</span>
+                <h2>Key nutrients</h2>
+              </div>
+            </div>
+            <div id="microBars" class="macro-list"></div>
+          </article>
+
+          <article class="panel other-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Other</span>
+                <h2>Water &amp; exercise</h2>
+              </div>
+            </div>
+            <div class="other-panel-body">
+              <div class="other-row">
+                <div class="other-row-label">
+                  <span class="other-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <strong>Water intake</strong>
+                    <span class="other-row-meta"><span id="waterCount">0</span> / 8 cups</span>
+                  </div>
+                </div>
+                <button id="addWater" class="primary-button other-row-action" type="button">Add cup</button>
+              </div>
+              <div class="other-row other-row--stack">
+                <div class="other-row-label">
+                  <span class="other-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
+                  </span>
+                  <div>
+                    <strong>Exercise</strong>
+                    <span class="other-row-meta" id="activeMinutes">0 min</span>
+                  </div>
+                </div>
+                <div class="mini-bar other-activity-bar"><span id="activityBar"></span></div>
+              </div>
+              <form id="workoutForm" class="stacked-form other-workout-form">
+                <label>
+                  Workout
+                  <select id="workoutType">
+                    <option data-calories="90">Walk</option>
+                    <option data-calories="150">Run</option>
+                    <option data-calories="110">Strength training</option>
+                    <option data-calories="130">Cycling</option>
+                    <option data-calories="95">Yoga</option>
+                  </select>
+                </label>
+                <div class="two-column">
+                  <label>
+                    Minutes
+                    <input id="workoutMinutes" type="number" min="5" step="5" value="30" />
+                  </label>
+                  <label>
+                    Effort
+                    <select id="workoutEffort">
+                      <option value="0.8">Light</option>
+                      <option value="1" selected>Moderate</option>
+                      <option value="1.25">Hard</option>
+                    </select>
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">Log workout</button>
+              </form>
+            </div>
+          </article>
+
+          <article class="panel log-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Activity log</span>
+                <h2>Workouts</h2>
+              </div>
+            </div>
+            <div id="workoutLog" class="log-list empty-state">No workouts logged yet.</div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

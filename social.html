@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10241a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MacroDock" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>MacroDock Social</title>
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <strong>MacroDock</strong>
+            <span>Nutrition + fitness</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a href="./index.html#dashboard" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1" />
+                <rect x="14" y="3" width="7" height="5" rx="1" />
+                <rect x="14" y="12" width="7" height="9" rx="1" />
+                <rect x="3" y="16" width="7" height="5" rx="1" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Dashboard</span>
+          </a>
+          <a href="./progress.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M7 16l4-4 4 4 6-6" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Progress</span>
+          </a>
+          <a href="./social.html" class="nav-item active">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Social</span>
+          </a>
+          <a href="./settings.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Settings</span>
+          </a>
+        </nav>
+
+        <section class="profile-card">
+          <span class="eyebrow">Daily target</span>
+          <strong id="targetCalories">2,150 kcal</strong>
+          <p id="profilePlanText">Balanced maintenance plan</p>
+        </section>
+      </aside>
+
+      <main class="main-content coming-soon-content">
+        <p class="coming-soon-message">Coming soon!</p>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

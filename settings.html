@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10241a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MacroDock" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>MacroDock Settings</title>
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <strong>MacroDock</strong>
+            <span>Nutrition + fitness</span>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a href="./index.html#dashboard" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1" />
+                <rect x="14" y="3" width="7" height="5" rx="1" />
+                <rect x="14" y="12" width="7" height="9" rx="1" />
+                <rect x="3" y="16" width="7" height="5" rx="1" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Dashboard</span>
+          </a>
+          <a href="./progress.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M7 16l4-4 4 4 6-6" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Progress</span>
+          </a>
+          <a href="./social.html" class="nav-item">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Social</span>
+          </a>
+          <a href="./settings.html" class="nav-item active">
+            <span class="nav-item-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            </span>
+            <span class="nav-item-label">Settings</span>
+          </a>
+        </nav>
+
+        <section class="profile-card">
+          <span class="eyebrow">Daily target</span>
+          <strong id="targetCalories">2,150 kcal</strong>
+          <p id="profilePlanText">Balanced maintenance plan</p>
+        </section>
+      </aside>
+
+      <main class="main-content settings-content">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">Settings</span>
+            <h1>Preferences</h1>
+          </div>
+        </header>
+
+        <section class="settings-page">
+          <article class="panel settings-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Login</span>
+                <h2>Account access</h2>
+              </div>
+            </div>
+
+            <form id="authForm" class="stacked-form">
+              <label>
+                Name
+                <input id="authName" type="text" autocomplete="name" placeholder="Only needed for new accounts" />
+              </label>
+              <label>
+                Email
+                <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+              </label>
+              <label>
+                Password
+                <input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
+              </label>
+              <div class="auth-actions">
+                <button id="loginButton" class="primary-button" type="button">Log in</button>
+                <button id="registerButton" class="ghost-button" type="button">Create account</button>
+              </div>
+            </form>
+
+            <div id="authPanel" class="account-summary" aria-live="polite">
+              Log in or create an account to save your metrics to the backend database.
+            </div>
+          </article>
+
+          <article class="panel settings-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Account</span>
+                <h2>Profile and goal</h2>
+              </div>
+            </div>
+
+            <form id="accountForm" class="stacked-form">
+              <label>
+                Name
+                <input id="accountName" type="text" autocomplete="name" placeholder="Your name" />
+              </label>
+              <div class="two-column">
+                <label>
+                  Sex
+                  <select id="accountSex">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </label>
+                <label>
+                  Age
+                  <input id="accountAge" type="number" min="13" max="100" step="1" value="30" />
+                </label>
+                <label>
+                  Height (cm)
+                  <input id="accountHeight" type="number" min="100" max="230" step="1" value="175" />
+                </label>
+                <label>
+                  Weight (kg)
+                  <input id="accountWeight" type="number" min="35" max="250" step="0.1" value="75" />
+                </label>
+              </div>
+              <label>
+                Activity level
+                <select id="accountActivity">
+                  <option value="1.2">Sedentary</option>
+                  <option value="1.375">Light</option>
+                  <option value="1.55" selected>Moderate</option>
+                  <option value="1.725">Active</option>
+                  <option value="1.9">Very active</option>
+                </select>
+              </label>
+              <div class="two-column">
+                <label>
+                  Goal weight (kg)
+                  <input id="goalWeight" type="number" min="35" max="250" step="0.1" value="75" />
+                </label>
+                <label>
+                  Goal date
+                  <input id="goalDate" type="date" />
+                </label>
+              </div>
+              <button class="primary-button" type="submit">Save account</button>
+            </form>
+
+            <div id="accountSummary" class="account-summary" aria-live="polite">
+              Add your metrics to calculate your daily calorie target.
+            </div>
+          </article>
+
+          <article class="panel settings-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Appearance</span>
+                <h2>Theme</h2>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div>
+                <strong>Light and dark mode</strong>
+                <span>Change the app theme. Your choice is saved on this device.</span>
+              </div>
+              <button id="themeToggle" class="theme-button" type="button" aria-pressed="false">
+                <span class="theme-icon" aria-hidden="true">D</span>
+                <span id="themeLabel">Dark mode</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="panel settings-panel">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Food database</span>
+                <h2>Backend search</h2>
+              </div>
+            </div>
+
+            <div class="setting-row setting-row-stack">
+              <div>
+                <strong>Food API server</strong>
+                <span>The app searches your backend first. The backend can cache foods and call USDA without exposing keys in the app.</span>
+              </div>
+              <label>
+                API URL
+                <input id="foodApiBase" type="url" autocomplete="off" placeholder="http://localhost:8787" />
+              </label>
+              <button id="saveFoodApiBase" class="primary-button" type="button">Save API URL</button>
+              <p id="foodApiStatus" class="settings-note">Using the current app server when available.</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
