@@ -10,6 +10,8 @@ const cacheFile = path.join(cacheDir, "food-cache.json");
 const usersFile = path.join(cacheDir, "users.json");
 const fdcSearchUrl = "https://api.nal.usda.gov/fdc/v1/foods/search";
 const fdcApiKey = process.env.USDA_API_KEY || "DEMO_KEY";
+const supabaseUrl = process.env.SUPABASE_URL || "https://ulmwocfyvocswblavfdj.supabase.co";
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY";
 
 const commonFoods = [
   { name: "Apple", calories: 95, protein: 0.5, carbs: 25, fat: 0.3, fiber: 4.4, calcium: 11, iron: 0.2, vitaminC: 8, potassium: 195, source: "MacroDock" },
@@ -346,6 +348,14 @@ const server = http.createServer((request, response) => {
 
   if (url.pathname === "/api/health") {
     sendJson(response, 200, { ok: true, source: "MacroDock backend" });
+    return;
+  }
+
+  if (url.pathname === "/api/config") {
+    sendJson(response, 200, {
+      supabaseUrl,
+      supabaseAnonKey
+    });
     return;
   }
 

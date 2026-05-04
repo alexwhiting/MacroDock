@@ -368,6 +368,10 @@ let selectedFood = foods[0];
 let foodSearchTimer;
 let latestFoodSearchToken = 0;
 let isCustomFoodMode = false;
+const runtimeConfig = {
+  supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
+  supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
+};
 
 const elements = {
   foodSearch: document.querySelector("#foodSearch"),
@@ -562,6 +566,35 @@ function saveAccountFromForm(event) {
   renderTargetSummary();
 
   if (getAuthToken()) {
+    if (getAuthProvider() === "supabase" && supabaseEnabled()) {
+      supabaseRequest("/auth/v1/user")
+        .then((authData) => supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
+          method: "POST",
+          headers: {
+            Prefer: "resolution=merge-duplicates,return=representation"
+          },
+          body: JSON.stringify({
+            user_id: authData.id,
+            name: account.name,
+            account
+          })
+        }))
+        .then((rows) => {
+          const savedAccount = rows?.[0]?.account || account;
+          localStorage.setItem("macrodock-account", JSON.stringify(savedAccount));
+          renderAuthState({
+            name: savedAccount.name,
+            account: savedAccount
+          });
+        })
+        .catch((error) => {
+          if (elements.accountSummary) {
+            elements.accountSummary.insertAdjacentHTML("beforeend", `<p>${escapeHtml(error.message)}</p>`);
+          }
+        });
+      return;
+    }
+
     apiRequest("/api/account", {
       method: "PUT",
       body: JSON.stringify(account)
@@ -639,11 +672,54 @@ function getAuthToken() {
   return localStorage.getItem("macrodock-auth-token") || "";
 }
 
+function getAuthProvider() {
+  return localStorage.getItem("macrodock-auth-provider") || "local";
+}
+
 function setAuthToken(token) {
   if (token) {
     localStorage.setItem("macrodock-auth-token", token);
   } else {
     localStorage.removeItem("macrodock-auth-token");
+    localStorage.removeItem("macrodock-auth-provider");
+  }
+}
+
+function setAuthSession(token, provider) {
+  setAuthToken(token);
+  if (token) {
+    localStorage.setItem("macrodock-auth-provider", provider);
+  }
+}
+
+function supabaseEnabled() {
+  return Boolean(runtimeConfig.supabaseUrl && runtimeConfig.supabaseAnonKey);
+}
+
+async function loadRuntimeConfig() {
+  const localAnonKey = localStorage.getItem("macrodock-supabase-anon-key") || "";
+
+  if (localAnonKey) {
+    runtimeConfig.supabaseAnonKey = localAnonKey;
+  }
+
+  if (window.MACRODOCK_SUPABASE?.anonKey) {
+    runtimeConfig.supabaseUrl = window.MACRODOCK_SUPABASE.url || runtimeConfig.supabaseUrl;
+    runtimeConfig.supabaseAnonKey = window.MACRODOCK_SUPABASE.anonKey;
+  }
+
+  if (window.location.protocol === "file:") {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${getFoodApiBase()}/api/config`);
+    const data = await response.json();
+
+    runtimeConfig.supabaseUrl = data.supabaseUrl || runtimeConfig.supabaseUrl;
+    runtimeConfig.supabaseAnonKey = data.supabaseAnonKey || runtimeConfig.supabaseAnonKey;
+  } catch {
+    // Static hosting can still use window.MACRODOCK_SUPABASE or localStorage config.
   }
 }
 
@@ -717,6 +793,73 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+async function supabaseRequest(path, options = {}) {
+  const headers = {
+    apikey: runtimeConfig.supabaseAnonKey,
+    "Content-Type": "application/json",
+    ...(options.headers || {})
+  };
+  const token = getAuthToken();
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${runtimeConfig.supabaseUrl}${path}`, {
+    ...options,
+    headers
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error_description || data.msg || data.message || data.error || "Supabase request failed");
+  }
+
+  return data;
+}
+
+function supabasePublicUser(user, account = null) {
+  return {
+    id: user.id,
+    name: user.user_metadata?.name || user.email || "Logged in",
+    email: user.email,
+    account
+  };
+}
+
+async function loadSupabaseProfile(user) {
+  const params = new URLSearchParams({
+    select: "account,name",
+    user_id: `eq.${user.id}`
+  });
+  const rows = await supabaseRequest(`/rest/v1/profiles?${params.toString()}`);
+  const profile = Array.isArray(rows) ? rows[0] : null;
+
+  return {
+    account: profile?.account || null,
+    user: supabasePublicUser(user, profile?.account || null)
+  };
+}
+
+async function loadSupabaseAccount() {
+  const authData = await supabaseRequest("/auth/v1/user");
+  const profileData = await loadSupabaseProfile(authData);
+
+  if (profileData.account) {
+    localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
+  }
+
+  renderAuthState(profileData.user);
+  renderAccountSettings();
+  renderTargetSummary();
+
+  if (elements.remainingCalories) {
+    render();
+  }
+
+  return profileData.account;
+}
+
 async function loadRemoteAccount() {
   if (!getAuthToken()) {
     renderAuthState();
@@ -724,6 +867,10 @@ async function loadRemoteAccount() {
   }
 
   try {
+    if (getAuthProvider() === "supabase" && supabaseEnabled()) {
+      return await loadSupabaseAccount();
+    }
+
     const data = await apiRequest("/api/account");
 
     if (data.account) {
@@ -761,7 +908,7 @@ function renderAuthState(user) {
     elements.authPanel.innerHTML = `
       <div>
         <strong>${escapeHtml(displayName)}</strong>
-        <span>Your account metrics save to the backend database.</span>
+        <span>Your account metrics save to ${getAuthProvider() === "supabase" ? "Supabase" : "the local backend database"}.</span>
       </div>
       <button id="logoutButton" class="ghost-button" type="button">Log out</button>
     `;
@@ -769,7 +916,9 @@ function renderAuthState(user) {
     return;
   }
 
-  elements.authPanel.textContent = "Log in or create an account to save your metrics to the backend database.";
+  elements.authPanel.textContent = supabaseEnabled()
+    ? "Log in or create an account with Supabase."
+    : "Supabase is not configured yet. Local backend login is available for development.";
 }
 
 async function authenticate(mode) {
@@ -783,15 +932,47 @@ async function authenticate(mode) {
     email: elements.authEmail.value.trim(),
     password: elements.authPassword.value
   };
-  const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
 
   try {
+    if (supabaseEnabled()) {
+      const path = mode === "register" ? "/auth/v1/signup" : "/auth/v1/token?grant_type=password";
+      const authPayload = mode === "register"
+        ? { email: payload.email, password: payload.password, data: { name: payload.name } }
+        : { email: payload.email, password: payload.password };
+      const data = await supabaseRequest(path, {
+        method: "POST",
+        body: JSON.stringify(authPayload)
+      });
+
+      if (!data.access_token) {
+        elements.authPanel.textContent = "Account created. Check your email to confirm it, then log in.";
+        setAuthMode("login");
+        return;
+      }
+
+      setAuthSession(data.access_token, "supabase");
+      elements.authPassword.value = "";
+      const profileData = await loadSupabaseProfile(data.user);
+
+      if (profileData.account) {
+        localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
+      }
+
+      renderAuthState(profileData.user);
+
+      if (isAuthPage()) {
+        redirectAfterAuth();
+      }
+      return;
+    }
+
+    const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
     const data = await apiRequest(endpoint, {
       method: "POST",
       body: JSON.stringify(payload)
     });
 
-    setAuthToken(data.token);
+    setAuthSession(data.token, "local");
     elements.authPassword.value = "";
     renderAuthState(data.user);
 
@@ -811,7 +992,11 @@ async function authenticate(mode) {
 
 async function logout() {
   try {
-    await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
+    if (getAuthProvider() === "supabase" && supabaseEnabled()) {
+      await supabaseRequest("/auth/v1/logout", { method: "POST", body: "{}" });
+    } else {
+      await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
+    }
   } catch {
     // Local logout should still clear the token if the server is unavailable.
   }
@@ -1489,6 +1674,7 @@ function watchDateRollover() {
 }
 
 async function initializeApp() {
+  await loadRuntimeConfig();
   applyTheme(getInitialTheme());
   renderFoodApiSettings();
   renderAccountSettings();
