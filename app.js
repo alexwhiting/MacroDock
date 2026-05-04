@@ -247,6 +247,7 @@ const state = JSON.parse(localStorage.getItem("macrodock-state")) || {
   foods: [],
   workouts: [],
   water: 0,
+  waterByDate: {},
   diaryDate: null
 };
 
@@ -257,8 +258,15 @@ function diaryTodayIso() {
 
 function normalizeDiaryState() {
   const today = diaryTodayIso();
-  if (!state.diaryDate) {
+  if (!state.diaryDate || !state.lastToday || state.diaryDate === state.lastToday) {
     state.diaryDate = today;
+  }
+  state.lastToday = today;
+  if (!state.waterByDate) {
+    state.waterByDate = {};
+  }
+  if (typeof state.water === "number" && state.water > 0 && state.waterByDate[today] === undefined) {
+    state.waterByDate[today] = state.water;
   }
   state.foods.forEach((f) => {
     if (!f.date) {
@@ -280,6 +288,15 @@ function workoutMatchesDiary(workout) {
   return (workout.date || diaryTodayIso()) === state.diaryDate;
 }
 
+function waterForDiary() {
+  return state.waterByDate?.[state.diaryDate] || 0;
+}
+
+function setWaterForDiary(value) {
+  state.waterByDate[state.diaryDate] = Math.max(Math.min(value, 20), 0);
+  state.water = waterForDiary();
+}
+
 function parseIsoToLocalDate(iso) {
   const [y, m, day] = iso.split("-").map(Number);
   return new Date(y, m - 1, day);
@@ -297,6 +314,34 @@ function formatDiaryButtonLabel() {
     day: "numeric",
     year: "numeric"
   });
+}
+
+function isValidDiaryDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = parseIsoToLocalDate(value);
+  return !Number.isNaN(date.getTime()) && value === `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function shiftIsoDate(iso, days) {
+  const date = parseIsoToLocalDate(iso);
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function setDiaryDate(nextDate) {
+  if (!isValidDiaryDate(nextDate)) {
+    syncDiaryDateUi();
+    return;
+  }
+
+  state.diaryDate = nextDate;
+  state.water = waterForDiary();
+  saveState();
+  syncDiaryDateUi();
+  render();
 }
 
 function syncDiaryDateUi() {
@@ -351,6 +396,9 @@ const elements = {
   diaryDateInput: document.querySelector("#diaryDateInput"),
   dashboardDateButton: document.querySelector("#dashboardDateButton"),
   dashboardDateLabel: document.querySelector("#dashboardDateLabel"),
+  prevDiaryDate: document.querySelector("#prevDiaryDate"),
+  nextDiaryDate: document.querySelector("#nextDiaryDate"),
+  todayDiaryDate: document.querySelector("#todayDiaryDate"),
   workoutLog: document.querySelector("#workoutLog"),
   macroBars: document.querySelector("#macroBars"),
   microBars: document.querySelector("#microBars"),
@@ -372,6 +420,8 @@ const elements = {
   loginButton: document.querySelector("#loginButton"),
   registerButton: document.querySelector("#registerButton"),
   authPanel: document.querySelector("#authPanel"),
+  authTitle: document.querySelector("#authTitle"),
+  authNameField: document.querySelector("#authNameField"),
   accountForm: document.querySelector("#accountForm"),
   accountName: document.querySelector("#accountName"),
   accountSex: document.querySelector("#accountSex"),
@@ -597,6 +647,52 @@ function setAuthToken(token) {
   }
 }
 
+function currentPageFile() {
+  return (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+}
+
+function isAuthPage() {
+  return currentPageFile() === "auth.html";
+}
+
+function isProtectedPage() {
+  return ["", "index.html", "settings.html", "progress.html", "social.html"].includes(currentPageFile());
+}
+
+function redirectAfterAuth() {
+  const target = sessionStorage.getItem("macrodock-post-auth") || "./index.html";
+  sessionStorage.removeItem("macrodock-post-auth");
+  window.location.href = target;
+}
+
+function redirectToAuth() {
+  if (isAuthPage()) {
+    return;
+  }
+
+  sessionStorage.setItem("macrodock-post-auth", `${window.location.pathname}${window.location.search}${window.location.hash}`);
+  window.location.href = "./auth.html";
+}
+
+function setAuthMode(mode) {
+  const isRegister = mode === "register";
+
+  if (elements.authTitle) {
+    elements.authTitle.textContent = isRegister ? "Create account" : "Log in";
+  }
+
+  if (elements.authNameField) {
+    elements.authNameField.style.display = isRegister ? "grid" : "none";
+  }
+
+  if (elements.loginButton && elements.registerButton) {
+    elements.loginButton.textContent = isRegister ? "Log in instead" : "Log in";
+    elements.registerButton.textContent = isRegister ? "Create account" : "Create account instead";
+    elements.loginButton.dataset.authMode = isRegister ? "switch-login" : "login";
+    elements.registerButton.dataset.authMode = isRegister ? "register" : "switch-register";
+  }
+}
+
 async function apiRequest(path, options = {}) {
   const headers = {
     "Content-Type": "application/json",
@@ -657,6 +753,11 @@ function renderAuthState(user) {
 
   if (user || getAuthToken()) {
     const displayName = user?.name || user?.email || "Logged in";
+    if (isAuthPage()) {
+      elements.authPanel.textContent = `Welcome back, ${displayName}. Opening your dashboard...`;
+      return;
+    }
+
     elements.authPanel.innerHTML = `
       <div>
         <strong>${escapeHtml(displayName)}</strong>
@@ -672,6 +773,11 @@ function renderAuthState(user) {
 }
 
 async function authenticate(mode) {
+  if (mode === "switch-login" || mode === "switch-register") {
+    setAuthMode(mode === "switch-login" ? "login" : "register");
+    return;
+  }
+
   const payload = {
     name: elements.authName.value.trim(),
     email: elements.authEmail.value.trim(),
@@ -694,6 +800,10 @@ async function authenticate(mode) {
       renderAccountSettings();
       renderTargetSummary();
     }
+
+    if (isAuthPage()) {
+      redirectAfterAuth();
+    }
   } catch (error) {
     elements.authPanel.textContent = error.message;
   }
@@ -708,6 +818,7 @@ async function logout() {
 
   setAuthToken("");
   renderAuthState();
+  redirectToAuth();
 }
 
 function defaultFoodApiBase() {
@@ -978,7 +1089,7 @@ function renderDashboard() {
   elements.burnedCalories.textContent = formatNumber(workoutTotals.calories);
   elements.calorieRing.style.strokeDashoffset = circumference - calorieProgress * circumference;
   elements.caloriePercent.textContent = `${Math.round(calorieProgress * 100)}%`;
-  elements.waterCount.textContent = state.water;
+  elements.waterCount.textContent = waterForDiary();
   elements.activeMinutes.textContent = `${workoutTotals.minutes} min`;
   elements.activityBar.style.width = `${Math.min((workoutTotals.minutes / 45) * 100, 100)}%`;
   renderTargetSummary();
@@ -1150,7 +1261,7 @@ if (elements.workoutForm) {
 
 if (elements.addWater) {
   elements.addWater.addEventListener("click", () => {
-  state.water = Math.min(state.water + 1, 20);
+  setWaterForDiary(waterForDiary() + 1);
   render();
 });
 }
@@ -1214,11 +1325,18 @@ if (elements.saveFoodApiBase) {
 }
 
 if (elements.loginButton) {
-  elements.loginButton.addEventListener("click", () => authenticate("login"));
+  elements.loginButton.addEventListener("click", () => authenticate(elements.loginButton.dataset.authMode || "login"));
 }
 
 if (elements.registerButton) {
-  elements.registerButton.addEventListener("click", () => authenticate("register"));
+  elements.registerButton.addEventListener("click", () => authenticate(elements.registerButton.dataset.authMode || "register"));
+}
+
+if (elements.authForm) {
+  elements.authForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    authenticate(elements.registerButton?.dataset.authMode === "register" ? "register" : "login");
+  });
 }
 
 if (elements.accountForm) {
@@ -1227,22 +1345,41 @@ if (elements.accountForm) {
 
 if (elements.dashboardDateButton && elements.diaryDateInput) {
   elements.dashboardDateButton.addEventListener("click", () => {
-    if (typeof elements.diaryDateInput.showPicker === "function") {
-      elements.diaryDateInput.showPicker();
-    } else {
-      elements.diaryDateInput.click();
-    }
+    elements.diaryDateInput.classList.toggle("is-open");
+    elements.diaryDateInput.focus();
+    elements.diaryDateInput.select();
   });
 
   elements.diaryDateInput.addEventListener("change", () => {
     if (!elements.diaryDateInput.value) {
       return;
     }
-    state.diaryDate = elements.diaryDateInput.value;
-    saveState();
-    syncDiaryDateUi();
-    render();
+    setDiaryDate(elements.diaryDateInput.value);
   });
+
+  elements.diaryDateInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      elements.diaryDateInput.blur();
+      setDiaryDate(elements.diaryDateInput.value);
+    }
+  });
+
+  elements.diaryDateInput.addEventListener("blur", () => {
+    elements.diaryDateInput.classList.remove("is-open");
+    syncDiaryDateUi();
+  });
+}
+
+if (elements.prevDiaryDate) {
+  elements.prevDiaryDate.addEventListener("click", () => setDiaryDate(shiftIsoDate(state.diaryDate, -1)));
+}
+
+if (elements.nextDiaryDate) {
+  elements.nextDiaryDate.addEventListener("click", () => setDiaryDate(shiftIsoDate(state.diaryDate, 1)));
+}
+
+if (elements.todayDiaryDate) {
+  elements.todayDiaryDate.addEventListener("click", () => setDiaryDate(diaryTodayIso()));
 }
 
 if (elements.mealSections) {
@@ -1331,13 +1468,63 @@ document.querySelectorAll(".nav-item").forEach((link) => {
 window.addEventListener("hashchange", syncNavActive);
 syncNavActive();
 
-applyTheme(getInitialTheme());
-renderFoodApiSettings();
-renderAccountSettings();
-renderTargetSummary();
-loadRemoteAccount();
+function watchDateRollover() {
+  let lastToday = diaryTodayIso();
 
-if (elements.foodSearch) {
-  renderFoodSearch();
-  render();
+  window.setInterval(() => {
+    const currentToday = diaryTodayIso();
+    if (currentToday === lastToday) {
+      return;
+    }
+
+    if (state.diaryDate === lastToday) {
+      state.diaryDate = currentToday;
+    }
+
+    state.lastToday = currentToday;
+    lastToday = currentToday;
+    syncDiaryDateUi();
+    render();
+  }, 60000);
 }
+
+async function initializeApp() {
+  applyTheme(getInitialTheme());
+  renderFoodApiSettings();
+  renderAccountSettings();
+  renderTargetSummary();
+
+  if (isAuthPage()) {
+    setAuthMode("login");
+    window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
+
+    if (getAuthToken()) {
+      await loadRemoteAccount();
+      if (getAuthToken()) {
+        redirectAfterAuth();
+      }
+    }
+
+    return;
+  }
+
+  if (isProtectedPage() && !getAuthToken()) {
+    redirectToAuth();
+    return;
+  }
+
+  await loadRemoteAccount();
+
+  if (isProtectedPage() && !getAuthToken()) {
+    redirectToAuth();
+    return;
+  }
+
+  if (elements.foodSearch) {
+    renderFoodSearch();
+    render();
+    watchDateRollover();
+  }
+}
+
+initializeApp();

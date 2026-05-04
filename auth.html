@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10241a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MacroDock" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>MacroDock Login</title>
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="page-auth is-loading">
+    <main class="auth-screen">
+      <section class="auth-splash" aria-live="polite">
+        <div class="auth-mark">M</div>
+        <strong>MacroDock</strong>
+        <span>Loading your diary...</span>
+      </section>
+
+      <section class="auth-card" aria-labelledby="authTitle">
+        <div class="auth-card-head">
+          <div class="auth-mark auth-mark-small">M</div>
+          <div>
+            <span class="eyebrow">MacroDock</span>
+            <h1 id="authTitle">Log in</h1>
+          </div>
+        </div>
+
+        <form id="authForm" class="stacked-form">
+          <label id="authNameField" class="auth-name-field">
+            Name
+            <input id="authName" type="text" autocomplete="name" placeholder="Your name" />
+          </label>
+          <label>
+            Email
+            <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" />
+          </label>
+          <label>
+            Password
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
+          </label>
+          <button id="loginButton" class="primary-button" type="button">Log in</button>
+          <button id="registerButton" class="ghost-button" type="button">Create account instead</button>
+        </form>
+
+        <div id="authPanel" class="account-summary" aria-live="polite">
+          Log in or create an account to continue.
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

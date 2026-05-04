@@ -78,11 +78,14 @@
       <main class="main-content main-dashboard">
         <header class="dashboard-top">
           <div class="dashboard-date-row">
-            <input type="date" id="diaryDateInput" class="diary-date-input" aria-label="Choose diary date" />
+            <button type="button" id="prevDiaryDate" class="date-step-button" aria-label="Previous day">‹</button>
             <button type="button" id="dashboardDateButton" class="dashboard-date-button">
-              <span id="dashboardDateLabel">Today (May 3, 2026)</span>
+              <span id="dashboardDateLabel">Today</span>
               <span class="date-chevron" aria-hidden="true"></span>
             </button>
+            <button type="button" id="nextDiaryDate" class="date-step-button" aria-label="Next day">›</button>
+            <button type="button" id="todayDiaryDate" class="date-today-button">Today</button>
+            <input type="text" id="diaryDateInput" class="diary-date-input" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" aria-label="Choose diary date" />
           </div>
         </header>
 

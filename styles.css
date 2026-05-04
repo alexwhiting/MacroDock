@@ -246,19 +246,34 @@ body[data-theme="dark"] .nav-item.active {
 .dashboard-date-row {
   position: relative;
   display: flex;
+  align-items: center;
+  gap: 8px;
   justify-content: center;
   width: 100%;
 }
 
 .diary-date-input {
   position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 5;
+  width: min(220px, calc(100vw - 32px));
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
   opacity: 0;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  border: 0;
-  padding: 0;
+  padding: 0 12px;
   pointer-events: none;
+  transform: translateX(-50%) translateY(-6px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.diary-date-input.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
 }
 
 .dashboard-date-button {
@@ -277,6 +292,31 @@ body[data-theme="dark"] .nav-item.active {
   letter-spacing: 0.01em;
   cursor: pointer;
   text-align: center;
+}
+
+.date-step-button,
+.date-today-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(39, 63, 49, 0.08);
+}
+
+.date-step-button {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.date-today-button {
+  padding: 0 12px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
 }
 
 .dashboard-date-button:hover {
@@ -945,6 +985,97 @@ body.dialog-open {
   gap: 10px;
 }
 
+.page-auth {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: calc(28px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
+}
+
+.auth-splash,
+.auth-card {
+  width: min(100%, 420px);
+}
+
+.auth-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  background: var(--bg);
+  color: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.page-auth.is-loading .auth-splash {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.auth-splash strong {
+  font-size: 1.6rem;
+}
+
+.auth-splash span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.auth-mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: var(--brand-bg);
+  color: var(--brand-ink);
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.auth-mark-small {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+}
+
+.auth-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.auth-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.auth-card h1 {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.auth-name-field {
+  display: none;
+}
+
 .account-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1062,13 +1193,17 @@ body.dialog-open {
   }
 
   .sidebar {
-    position: sticky;
-    top: 0;
+    position: static;
     z-index: 30;
     display: block;
     height: auto;
-    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .brand {
+    display: none;
   }
 
   .brand-mark {
@@ -1086,19 +1221,21 @@ body.dialog-open {
 
   .nav-list {
     position: fixed;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    left: 12px;
+    right: auto;
+    bottom: calc(4px + env(safe-area-inset-bottom));
+    left: 50%;
     z-index: 40;
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: stretch;
     gap: 2px;
+    width: min(calc(100% - 16px), 430px);
     padding: 6px 8px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--surface);
     box-shadow: 0 14px 44px rgba(0, 0, 0, 0.16);
+    transform: translateX(-50%);
   }
 
   .nav-item {
@@ -1158,7 +1295,7 @@ body.dialog-open {
 
   .main-content {
     background: var(--bg);
-    padding: 18px 16px calc(100px + env(safe-area-inset-bottom));
+    padding: calc(18px + env(safe-area-inset-top)) 16px calc(82px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -1174,6 +1311,24 @@ body.dialog-open {
   .dashboard-top {
     gap: 12px;
     margin-bottom: 16px;
+  }
+
+  .dashboard-date-row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .dashboard-date-button {
+    max-width: calc(100% - 108px);
+    min-height: 42px;
+    padding-inline: 4px;
+    font-size: 1.08rem;
+  }
+
+  .date-today-button {
+    min-height: 36px;
+    order: 5;
+    width: auto;
   }
 
   .main-dashboard .dashboard-sketch-column {
@@ -1212,7 +1367,7 @@ body.dialog-open {
 
   .dialog-backdrop {
     align-items: flex-end;
-    padding: 16px 12px calc(100px + env(safe-area-inset-bottom));
+    padding: 16px 12px calc(82px + env(safe-area-inset-bottom));
   }
 
   .dialog-sheet {
@@ -1279,7 +1434,6 @@ body.dialog-open {
   }
 
   .nav-list {
-    right: 8px;
-    left: 8px;
+    width: min(calc(100% - 12px), 430px);
   }
 }

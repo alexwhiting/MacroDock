@@ -87,32 +87,12 @@
           <article class="panel settings-panel">
             <div class="section-heading">
               <div>
-                <span class="eyebrow">Login</span>
-                <h2>Account access</h2>
+                <span class="eyebrow">Account</span>
+                <h2>Signed in</h2>
               </div>
             </div>
-
-            <form id="authForm" class="stacked-form">
-              <label>
-                Name
-                <input id="authName" type="text" autocomplete="name" placeholder="Only needed for new accounts" />
-              </label>
-              <label>
-                Email
-                <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" />
-              </label>
-              <label>
-                Password
-                <input id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
-              </label>
-              <div class="auth-actions">
-                <button id="loginButton" class="primary-button" type="button">Log in</button>
-                <button id="registerButton" class="ghost-button" type="button">Create account</button>
-              </div>
-            </form>
-
             <div id="authPanel" class="account-summary" aria-live="polite">
-              Log in or create an account to save your metrics to the backend database.
+              Checking account status...
             </div>
           </article>
 
@@ -167,7 +147,7 @@
                 </label>
                 <label>
                   Goal date
-                  <input id="goalDate" type="date" />
+                  <input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" />
                 </label>
               </div>
               <button class="primary-button" type="submit">Save account</button>
