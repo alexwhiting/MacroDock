@@ -297,6 +297,34 @@ function setWaterForDiary(value) {
   state.water = waterForDiary();
 }
 
+function mergeDiaryDay(date, diaryDay = {}) {
+  state.foods = [
+    ...state.foods.filter((food) => (food.date || diaryTodayIso()) !== date),
+    ...(diaryDay.foods || []).map((food) => ({ ...food, date }))
+  ];
+  state.workouts = [
+    ...state.workouts.filter((workout) => (workout.date || diaryTodayIso()) !== date),
+    ...(diaryDay.workouts || []).map((workout) => ({ ...workout, date }))
+  ];
+  state.waterByDate[date] = Number(diaryDay.water) || 0;
+
+  if (state.diaryDate === date) {
+    state.water = waterForDiary();
+  }
+}
+
+function currentDiaryPayload() {
+  return {
+    foods: state.foods.filter(itemMatchesDiary),
+    workouts: state.workouts.filter(workoutMatchesDiary),
+    water: waterForDiary()
+  };
+}
+
+function shouldSyncDiaryToSupabase() {
+  return getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id;
+}
+
 function parseIsoToLocalDate(iso) {
   const [y, m, day] = iso.split("-").map(Number);
   return new Date(y, m - 1, day);
@@ -331,15 +359,24 @@ function shiftIsoDate(iso, days) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function setDiaryDate(nextDate) {
+async function setDiaryDate(nextDate) {
   if (!isValidDiaryDate(nextDate)) {
     syncDiaryDateUi();
     return;
   }
 
+  if (shouldSyncDiaryToSupabase()) {
+    await saveSupabaseDiaryDay().catch(() => {});
+  }
+
   state.diaryDate = nextDate;
   state.water = waterForDiary();
   saveState();
+
+  if (shouldSyncDiaryToSupabase()) {
+    await loadSupabaseDiaryDay(nextDate).catch(() => {});
+  }
+
   syncDiaryDateUi();
   render();
 }
@@ -368,6 +405,9 @@ let selectedFood = foods[0];
 let foodSearchTimer;
 let latestFoodSearchToken = 0;
 let isCustomFoodMode = false;
+let currentSupabaseUser = null;
+let isHydratingDiary = false;
+let diarySaveTimer = null;
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -471,6 +511,7 @@ function applyTheme(theme) {
 
 function saveState() {
   localStorage.setItem("macrodock-state", JSON.stringify(state));
+  queueDiaryCloudSave();
 }
 
 function formatNumber(value) {
@@ -828,6 +869,7 @@ function supabasePublicUser(user, account = null) {
 }
 
 async function loadSupabaseProfile(user) {
+  currentSupabaseUser = user;
   const params = new URLSearchParams({
     select: "account,name",
     user_id: `eq.${user.id}`
@@ -841,9 +883,64 @@ async function loadSupabaseProfile(user) {
   };
 }
 
+async function loadSupabaseDiaryDay(date = state.diaryDate) {
+  if (!shouldSyncDiaryToSupabase()) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    select: "foods,workouts,water",
+    user_id: `eq.${currentSupabaseUser.id}`,
+    diary_date: `eq.${date}`
+  });
+  const rows = await supabaseRequest(`/rest/v1/diary_days?${params.toString()}`);
+  const diaryDay = Array.isArray(rows) ? rows[0] : null;
+
+  isHydratingDiary = true;
+  mergeDiaryDay(date, diaryDay || { foods: [], workouts: [], water: 0 });
+  saveState();
+  isHydratingDiary = false;
+  return diaryDay;
+}
+
+async function saveSupabaseDiaryDay() {
+  if (!shouldSyncDiaryToSupabase() || isHydratingDiary) {
+    return;
+  }
+
+  const payload = currentDiaryPayload();
+  await supabaseRequest("/rest/v1/diary_days?on_conflict=user_id,diary_date", {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=merge-duplicates"
+    },
+    body: JSON.stringify({
+      user_id: currentSupabaseUser.id,
+      diary_date: state.diaryDate,
+      foods: payload.foods,
+      workouts: payload.workouts,
+      water: payload.water
+    })
+  });
+}
+
+function queueDiaryCloudSave() {
+  if (!shouldSyncDiaryToSupabase() || isHydratingDiary) {
+    return;
+  }
+
+  window.clearTimeout(diarySaveTimer);
+  diarySaveTimer = window.setTimeout(() => {
+    saveSupabaseDiaryDay().catch((error) => {
+      console.warn("Diary cloud save failed", error);
+    });
+  }, 350);
+}
+
 async function loadSupabaseAccount() {
   const authData = await supabaseRequest("/auth/v1/user");
   const profileData = await loadSupabaseProfile(authData);
+  await loadSupabaseDiaryDay(state.diaryDate);
 
   if (profileData.account) {
     localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
@@ -888,6 +985,7 @@ async function loadRemoteAccount() {
     return data.account || null;
   } catch {
     setAuthToken("");
+    currentSupabaseUser = null;
     renderAuthState();
     return null;
   }
@@ -1002,6 +1100,7 @@ async function logout() {
   }
 
   setAuthToken("");
+  currentSupabaseUser = null;
   renderAuthState();
   redirectToAuth();
 }
