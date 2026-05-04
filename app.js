@@ -1674,6 +1674,10 @@ function watchDateRollover() {
 }
 
 async function initializeApp() {
+  if (isAuthPage()) {
+    window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
+  }
+
   await loadRuntimeConfig();
   applyTheme(getInitialTheme());
   renderFoodApiSettings();
@@ -1682,7 +1686,6 @@ async function initializeApp() {
 
   if (isAuthPage()) {
     setAuthMode("login");
-    window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
 
     if (getAuthToken()) {
       await loadRemoteAccount();

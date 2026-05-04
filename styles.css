@@ -1005,7 +1005,7 @@ body.dialog-open {
 .auth-splash {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 0;
   display: grid;
   place-items: center;
   align-content: center;
@@ -1019,7 +1019,7 @@ body.dialog-open {
 
 .page-auth.is-loading .auth-splash {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .auth-splash strong {
@@ -1051,6 +1051,8 @@ body.dialog-open {
 }
 
 .auth-card {
+  position: relative;
+  z-index: 2;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
