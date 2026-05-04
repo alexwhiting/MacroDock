@@ -67,6 +67,14 @@ body {
   transition: background 160ms ease, color 160ms ease;
 }
 
+.page-home.is-hydrating .main-dashboard {
+  opacity: 0;
+}
+
+.page-home .main-dashboard {
+  transition: opacity 140ms ease;
+}
+
 button,
 input,
 select {

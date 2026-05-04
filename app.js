@@ -1816,8 +1816,7 @@ function hrefMatchesNavPage(page, href) {
   }
 
   if (page === "home") {
-    if (href === "#dashboard") return true;
-    return href.toLowerCase().includes("index.html#dashboard");
+    return pathOnly === "" || pathOnly === "index.html" || pathOnly.endsWith("/index.html");
   }
 
   return false;
@@ -1866,6 +1865,10 @@ function watchDateRollover() {
 }
 
 async function initializeApp() {
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+
   if (isAuthPage()) {
     window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
   }
@@ -1873,10 +1876,10 @@ async function initializeApp() {
   await loadRuntimeConfig();
   applyTheme(getInitialTheme());
   renderFoodApiSettings();
-  renderAccountSettings();
-  renderTargetSummary();
 
   if (isAuthPage()) {
+    renderAccountSettings();
+    renderTargetSummary();
     setAuthMode("login");
 
     if (getAuthToken()) {
@@ -1905,6 +1908,16 @@ async function initializeApp() {
     renderFoodSearch();
     render();
     watchDateRollover();
+  }
+
+  if (navPageKey() === "home") {
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.body.classList.remove("is-hydrating");
+    });
+  } else {
+    renderAccountSettings();
+    renderTargetSummary();
   }
 }
 
