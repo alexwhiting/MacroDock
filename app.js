@@ -408,6 +408,8 @@ let isCustomFoodMode = false;
 let currentSupabaseUser = null;
 let isHydratingDiary = false;
 let diarySaveTimer = null;
+let caloriePercentDisplay = 0;
+let caloriePercentFrame = null;
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -1463,6 +1465,40 @@ function renderLogs() {
   }
 }
 
+function animateCaloriePercent(targetPercent) {
+  const startPercent = caloriePercentDisplay;
+  const diff = targetPercent - startPercent;
+  const startTime = performance.now();
+  const duration = 650;
+  const ringWrap = elements.caloriePercent?.closest(".ring-wrap");
+
+  if (caloriePercentFrame) {
+    cancelAnimationFrame(caloriePercentFrame);
+  }
+
+  ringWrap?.classList.add("is-animating");
+
+  function tick(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    caloriePercentDisplay = startPercent + diff * eased;
+
+    elements.caloriePercent.textContent = `${Math.round(caloriePercentDisplay)}%`;
+
+    if (progress < 1) {
+      caloriePercentFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    caloriePercentDisplay = targetPercent;
+    elements.caloriePercent.textContent = `${targetPercent}%`;
+    ringWrap?.classList.remove("is-animating");
+    caloriePercentFrame = null;
+  }
+
+  caloriePercentFrame = requestAnimationFrame(tick);
+}
+
 function renderDashboard() {
   const foodTotals = totalsFromFood();
   const workoutTotals = totalsFromWorkouts();
@@ -1472,7 +1508,7 @@ function renderDashboard() {
     elements.consumedCalories.textContent = formatNumber(foodTotals.calories);
     elements.burnedCalories.textContent = formatNumber(workoutTotals.calories);
     elements.calorieRing.style.strokeDashoffset = 314;
-    elements.caloriePercent.textContent = "0%";
+    animateCaloriePercent(0);
     elements.waterCount.textContent = waterForDiary();
     elements.activeMinutes.textContent = `${workoutTotals.minutes} min`;
     elements.activityBar.style.width = `${Math.min((workoutTotals.minutes / 45) * 100, 100)}%`;
@@ -1489,7 +1525,7 @@ function renderDashboard() {
   elements.consumedCalories.textContent = formatNumber(foodTotals.calories);
   elements.burnedCalories.textContent = formatNumber(workoutTotals.calories);
   elements.calorieRing.style.strokeDashoffset = circumference - calorieProgress * circumference;
-  elements.caloriePercent.textContent = `${Math.round(calorieProgress * 100)}%`;
+  animateCaloriePercent(Math.round(calorieProgress * 100));
   elements.waterCount.textContent = waterForDiary();
   elements.activeMinutes.textContent = `${workoutTotals.minutes} min`;
   elements.activityBar.style.width = `${Math.min((workoutTotals.minutes / 45) * 100, 100)}%`;
@@ -1890,12 +1926,25 @@ function syncNavActive() {
 }
 
 document.querySelectorAll(".nav-item").forEach((link) => {
-  link.addEventListener("click", () => {
-    if (navPageKey() !== "home") return;
-    const href = link.getAttribute("href");
-    if (href?.startsWith("#")) {
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+  link.addEventListener("click", (event) => {
+    const nav = link.closest(".nav-list");
+    const nextIndex = nav ? Array.from(nav.children).indexOf(link) : -1;
+
+    if (nav && nextIndex >= 0) {
+      nav.style.setProperty("--active-tab-index", String(nextIndex));
+      nav.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
       link.classList.add("active");
+    }
+
+    const href = link.getAttribute("href") || "";
+    const currentPath = window.location.pathname.split("/").pop() || "index.html";
+    const nextPath = href.split("#")[0].replace(/^\.\//, "") || currentPath;
+
+    if (!href.startsWith("#") && nextPath !== currentPath && nav) {
+      event.preventDefault();
+      window.setTimeout(() => {
+        window.location.href = href;
+      }, 130);
     }
   });
 });

@@ -880,13 +880,20 @@ body.dialog-open {
   stroke-linecap: round;
   stroke-dasharray: 314;
   stroke-dashoffset: 314;
-  transition: stroke-dashoffset 180ms ease;
+  filter: drop-shadow(0 0 5px rgba(39, 122, 77, 0.35));
+  transition: stroke-dashoffset 700ms cubic-bezier(0.2, 0.8, 0.2, 1), stroke 180ms ease;
 }
 
 .ring-wrap span {
   position: absolute;
   font-weight: 900;
   color: var(--ink);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.ring-wrap.is-animating span {
+  color: var(--green-dark);
+  transform: scale(1.08);
 }
 
 .mini-bar,
@@ -1366,7 +1373,7 @@ body.dialog-open {
   .nav-list {
     position: fixed;
     right: auto;
-    bottom: 0;
+    bottom: calc(2px + env(safe-area-inset-bottom));
     left: 50%;
     z-index: 40;
     flex-direction: row;
@@ -1394,7 +1401,8 @@ body.dialog-open {
     border-radius: 999px;
     background: rgba(98, 199, 132, 0.2);
     transform: translateX(calc(var(--active-tab-index, 0) * (100% + 2px)));
-    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), background 160ms ease;
+    box-shadow: 0 8px 18px rgba(39, 122, 77, 0.12);
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, box-shadow 160ms ease;
   }
 
   .nav-item {
@@ -1449,6 +1457,7 @@ body.dialog-open {
   :root[data-theme="dark"] .nav-list::before,
   body[data-theme="dark"] .nav-list::before {
     background: rgba(121, 216, 155, 0.14);
+    box-shadow: 0 8px 18px rgba(121, 216, 155, 0.12);
   }
 
   :root[data-theme="dark"] .nav-item.active,
