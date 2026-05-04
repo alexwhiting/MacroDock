@@ -479,6 +479,7 @@ const elements = {
   foodDialog: document.querySelector("#foodDialog"),
   themeToggle: document.querySelector("#themeToggle"),
   themeLabel: document.querySelector("#themeLabel"),
+  metricsPrompt: document.querySelector("#metricsPrompt"),
   foodApiBase: document.querySelector("#foodApiBase"),
   saveFoodApiBase: document.querySelector("#saveFoodApiBase"),
   foodApiStatus: document.querySelector("#foodApiStatus")
@@ -693,6 +694,11 @@ function renderAccountSettings() {
   }
 
   const account = storedAccount();
+  const shouldPromptMetrics = sessionStorage.getItem("macrodock-needs-metrics") === "true" || (!account && getAuthToken());
+
+  if (elements.metricsPrompt) {
+    elements.metricsPrompt.hidden = !shouldPromptMetrics;
+  }
 
   if (account) {
     elements.accountName.value = account.name || "";
@@ -720,6 +726,10 @@ function renderAccountSettings() {
       </div>
       <p>${goalDescription(account)}. Daily adjustment: ${account.dailyGoalAdjustment >= 0 ? "+" : ""}${formatNumber(account.dailyGoalAdjustment)} kcal.</p>
     `;
+    sessionStorage.removeItem("macrodock-needs-metrics");
+    if (elements.metricsPrompt) {
+      elements.metricsPrompt.hidden = true;
+    }
     return;
   }
 
@@ -813,6 +823,12 @@ function redirectAfterAuth() {
   const target = sessionStorage.getItem("macrodock-post-auth") || "./index.html";
   sessionStorage.removeItem("macrodock-post-auth");
   window.location.href = target;
+}
+
+function redirectToMetricsSetup() {
+  sessionStorage.setItem("macrodock-needs-metrics", "true");
+  sessionStorage.removeItem("macrodock-post-auth");
+  window.location.href = "./settings.html#accountSection";
 }
 
 function redirectToAuth() {
@@ -1085,7 +1101,8 @@ async function authenticate(mode) {
       });
 
       if (!data.access_token) {
-        elements.authPanel.textContent = "Account created. Check your email to confirm it, then log in.";
+        sessionStorage.setItem("macrodock-needs-metrics", "true");
+        elements.authPanel.textContent = "Account created. Check your email to confirm it, then log in and complete your metrics.";
         setAuthMode("login");
         return;
       }
@@ -1099,6 +1116,11 @@ async function authenticate(mode) {
       }
 
       renderAuthState(profileData.user);
+
+      if (isAuthPage() && mode === "register") {
+        redirectToMetricsSetup();
+        return;
+      }
 
       if (isAuthPage()) {
         redirectAfterAuth();
@@ -1120,6 +1142,11 @@ async function authenticate(mode) {
       localStorage.setItem("macrodock-account", JSON.stringify(data.user.account));
       renderAccountSettings();
       renderTargetSummary();
+    }
+
+    if (isAuthPage() && mode === "register") {
+      redirectToMetricsSetup();
+      return;
     }
 
     if (isAuthPage()) {
@@ -1681,6 +1708,21 @@ if (elements.authForm) {
 if (elements.accountForm) {
   elements.accountForm.addEventListener("submit", saveAccountFromForm);
 }
+
+document.querySelectorAll("[data-settings-toggle]").forEach((toggle) => {
+  toggle.addEventListener("click", () => {
+    const targetId = toggle.getAttribute("data-settings-toggle");
+    const target = targetId ? document.getElementById(targetId) : null;
+
+    if (!target) {
+      return;
+    }
+
+    const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!isExpanded));
+    target.hidden = isExpanded;
+  });
+});
 
 if (elements.dashboardDateButton && elements.diaryDateInput) {
   elements.dashboardDateButton.addEventListener("click", () => {

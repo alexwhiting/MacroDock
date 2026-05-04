@@ -87,121 +87,122 @@
         </header>
 
         <section class="settings-page">
-          <article class="panel settings-panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Account</span>
-                <h2>Signed in</h2>
-              </div>
-            </div>
-            <div id="authPanel" class="account-summary" aria-live="polite">
-              Checking account status...
-            </div>
-          </article>
+          <div id="metricsPrompt" class="settings-prompt" hidden>
+            <strong>Complete your setup</strong>
+            <span>Add your metrics so MacroDock can calculate your calorie target.</span>
+          </div>
 
-          <article class="panel settings-panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Account</span>
-                <h2>Profile and goal</h2>
-              </div>
-            </div>
+          <form id="accountForm" class="settings-form">
+            <article id="accountSection" class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="accountFields" aria-expanded="true">
+                <span class="settings-section-icon" aria-hidden="true">A</span>
+                <span>
+                  <strong>Account</strong>
+                  <small>Profile and sign-in</small>
+                </span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
 
-            <form id="accountForm" class="stacked-form">
-              <label>
-                Name
-                <input id="accountName" type="text" autocomplete="name" placeholder="Your name" />
-              </label>
-              <div class="two-column">
+              <div id="accountFields" class="settings-section-body">
+                <div id="authPanel" class="account-summary" aria-live="polite">
+                  Checking account status...
+                </div>
                 <label>
-                  Sex
-                  <select id="accountSex">
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
+                  Name
+                  <input id="accountName" type="text" autocomplete="name" placeholder="Your name" />
+                </label>
+                <div class="two-column">
+                  <label>
+                    Sex
+                    <select id="accountSex">
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </label>
+                  <label>
+                    Age
+                    <input id="accountAge" type="number" min="13" max="100" step="1" value="30" />
+                  </label>
+                  <label>
+                    Height (cm)
+                    <input id="accountHeight" type="number" min="100" max="230" step="1" value="175" />
+                  </label>
+                  <label>
+                    Weight (kg)
+                    <input id="accountWeight" type="number" min="35" max="250" step="0.1" value="75" />
+                  </label>
+                </div>
+              </div>
+            </article>
+
+            <article id="goalsSection" class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="goalFields" aria-expanded="true">
+                <span class="settings-section-icon" aria-hidden="true">G</span>
+                <span>
+                  <strong>Goals</strong>
+                  <small>Calories and target weight</small>
+                </span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <div id="goalFields" class="settings-section-body">
+                <label>
+                  Activity level
+                  <select id="accountActivity">
+                    <option value="1.2">Sedentary</option>
+                    <option value="1.375">Light</option>
+                    <option value="1.55" selected>Moderate</option>
+                    <option value="1.725">Active</option>
+                    <option value="1.9">Very active</option>
                   </select>
                 </label>
-                <label>
-                  Age
-                  <input id="accountAge" type="number" min="13" max="100" step="1" value="30" />
-                </label>
-                <label>
-                  Height (cm)
-                  <input id="accountHeight" type="number" min="100" max="230" step="1" value="175" />
-                </label>
-                <label>
-                  Weight (kg)
-                  <input id="accountWeight" type="number" min="35" max="250" step="0.1" value="75" />
-                </label>
+                <div class="two-column">
+                  <label>
+                    Goal weight (kg)
+                    <input id="goalWeight" type="number" min="35" max="250" step="0.1" value="75" />
+                  </label>
+                  <label>
+                    Goal date
+                    <input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" />
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">Save metrics</button>
+                <div id="accountSummary" class="account-summary" aria-live="polite">
+                  Add your metrics to calculate your daily calorie target.
+                </div>
               </div>
-              <label>
-                Activity level
-                <select id="accountActivity">
-                  <option value="1.2">Sedentary</option>
-                  <option value="1.375">Light</option>
-                  <option value="1.55" selected>Moderate</option>
-                  <option value="1.725">Active</option>
-                  <option value="1.9">Very active</option>
-                </select>
-              </label>
-              <div class="two-column">
-                <label>
-                  Goal weight (kg)
-                  <input id="goalWeight" type="number" min="35" max="250" step="0.1" value="75" />
-                </label>
-                <label>
-                  Goal date
-                  <input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" />
-                </label>
-              </div>
-              <button class="primary-button" type="submit">Save account</button>
-            </form>
+            </article>
+          </form>
 
-            <div id="accountSummary" class="account-summary" aria-live="polite">
-              Add your metrics to calculate your daily calorie target.
-            </div>
-          </article>
+          <article id="appearanceSection" class="panel settings-panel settings-section-card">
+            <button class="settings-section-head" type="button" data-settings-toggle="appearanceFields" aria-expanded="true">
+              <span class="settings-section-icon" aria-hidden="true">T</span>
+              <span>
+                <strong>Appearance</strong>
+                <small>Theme and display</small>
+              </span>
+              <span class="settings-chevron" aria-hidden="true">›</span>
+            </button>
 
-          <article class="panel settings-panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Appearance</span>
-                <h2>Theme</h2>
-              </div>
-            </div>
-
-            <div class="setting-row">
-              <div>
-                <strong>Light and dark mode</strong>
-                <span>Change the app theme. Your choice is saved with your account.</span>
-              </div>
-              <button id="themeToggle" class="theme-button" type="button" aria-pressed="false">
-                <span class="theme-icon" aria-hidden="true">D</span>
-                <span id="themeLabel">Dark mode</span>
+            <div id="appearanceFields" class="settings-section-body">
+              <button id="themeToggle" class="settings-action-row" type="button" aria-pressed="false">
+                <span>
+                  <strong>Light and dark mode</strong>
+                  <small>Your choice is saved with your account.</small>
+                </span>
+                <span class="theme-button-inline">
+                  <span class="theme-icon" aria-hidden="true">D</span>
+                  <span id="themeLabel">Dark mode</span>
+                </span>
               </button>
             </div>
           </article>
 
-          <article class="panel settings-panel">
-            <div class="section-heading">
-              <div>
-                <span class="eyebrow">Food database</span>
-                <h2>Backend search</h2>
-              </div>
-            </div>
-
-            <div class="setting-row setting-row-stack">
-              <div>
-                <strong>Food API server</strong>
-                <span>The app searches your backend first. The backend can cache foods and call USDA without exposing keys in the app.</span>
-              </div>
-              <label>
-                API URL
-                <input id="foodApiBase" type="url" autocomplete="off" placeholder="http://localhost:8787" />
-              </label>
-              <button id="saveFoodApiBase" class="primary-button" type="button">Save API URL</button>
-              <p id="foodApiStatus" class="settings-note">Using the current app server when available.</p>
-            </div>
-          </article>
+          <div class="settings-advanced" hidden>
+            <input id="foodApiBase" type="url" autocomplete="off" placeholder="http://localhost:8787" />
+            <button id="saveFoodApiBase" type="button">Save API URL</button>
+            <p id="foodApiStatus">Using the current app server when available.</p>
+          </div>
         </section>
       </main>
     </div>
