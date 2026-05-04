@@ -1570,11 +1570,15 @@ function render() {
   saveState();
 }
 
-function setCustomFoodMode(isCustom) {
+function setCustomFoodMode(isCustom, shouldFocus = true) {
   isCustomFoodMode = isCustom;
   elements.customFoodFields.hidden = !isCustom;
   elements.useCustomFood.textContent = isCustom ? "Use starter foods" : "Add custom food";
   renderFoodSearch();
+
+  if (!shouldFocus) {
+    return;
+  }
 
   if (isCustom) {
     elements.customFoodName.focus();
@@ -1590,8 +1594,7 @@ function setFoodDialogOpen(isOpen) {
   if (isOpen) {
     elements.foodSearch.value = "";
     latestFoodSearchToken++;
-    setCustomFoodMode(false);
-    elements.foodSearch.focus();
+    setCustomFoodMode(false, false);
   } else if (elements.dashboardDateButton) {
     elements.dashboardDateButton.focus();
   }
@@ -1872,9 +1875,17 @@ function hrefMatchesNavPage(page, href) {
 
 function syncNavActive() {
   const page = navPageKey();
+  let activeIndex = 0;
   document.querySelectorAll(".nav-item").forEach((link) => {
     const href = link.getAttribute("href") || "";
-    link.classList.toggle("active", hrefMatchesNavPage(page, href));
+    const isActive = hrefMatchesNavPage(page, href);
+    link.classList.toggle("active", isActive);
+    if (isActive) {
+      activeIndex = Array.from(link.parentElement.children).indexOf(link);
+    }
+  });
+  document.querySelectorAll(".nav-list").forEach((nav) => {
+    nav.style.setProperty("--active-tab-index", String(Math.max(activeIndex, 0)));
   });
 }
 
