@@ -480,6 +480,7 @@ const elements = {
   themeToggle: document.querySelector("#themeToggle"),
   themeLabel: document.querySelector("#themeLabel"),
   metricsPrompt: document.querySelector("#metricsPrompt"),
+  startMetricsSetup: document.querySelector("#startMetricsSetup"),
   foodApiBase: document.querySelector("#foodApiBase"),
   saveFoodApiBase: document.querySelector("#saveFoodApiBase"),
   foodApiStatus: document.querySelector("#foodApiStatus")
@@ -622,6 +623,12 @@ function renderTargetSummary() {
 function saveAccountFromForm(event) {
   event.preventDefault();
 
+  if (!elements.accountName.value.trim() || !Number(elements.accountAge.value) || !Number(elements.accountHeight.value) || !Number(elements.accountWeight.value)) {
+    elements.accountSummary.textContent = "Enter your name, age, height, and weight to calculate your target.";
+    setSettingsSectionOpen("accountFields", true);
+    return;
+  }
+
   const accountInput = {
     name: elements.accountName.value.trim(),
     sex: elements.accountSex.value,
@@ -733,9 +740,14 @@ function renderAccountSettings() {
     return;
   }
 
-  const nextMonth = new Date();
-  nextMonth.setMonth(nextMonth.getMonth() + 3);
-  elements.goalDate.value = nextMonth.toISOString().slice(0, 10);
+  elements.accountName.value = currentSupabaseUser?.user_metadata?.name || "";
+  elements.accountSex.value = "male";
+  elements.accountAge.value = "";
+  elements.accountHeight.value = "";
+  elements.accountWeight.value = "";
+  elements.accountActivity.value = "1.55";
+  elements.goalWeight.value = "";
+  elements.goalDate.value = "";
   elements.accountSummary.textContent = "Add your metrics to calculate your daily calorie target.";
 }
 
@@ -1002,6 +1014,8 @@ async function loadSupabaseAccount() {
 
   if (profileData.account) {
     localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
+  } else {
+    localStorage.removeItem("macrodock-account");
   }
 
   renderAuthState(profileData.user);
@@ -1030,6 +1044,8 @@ async function loadRemoteAccount() {
 
     if (data.account) {
       localStorage.setItem("macrodock-account", JSON.stringify(data.account));
+    } else {
+      localStorage.removeItem("macrodock-account");
     }
 
     renderAuthState(data.user);
@@ -1090,6 +1106,11 @@ async function authenticate(mode) {
   };
 
   try {
+    if (mode === "register") {
+      localStorage.removeItem("macrodock-account");
+      sessionStorage.setItem("macrodock-needs-metrics", "true");
+    }
+
     if (supabaseEnabled()) {
       const path = mode === "register" ? "/auth/v1/signup" : "/auth/v1/token?grant_type=password";
       const authPayload = mode === "register"
@@ -1113,9 +1134,16 @@ async function authenticate(mode) {
 
       if (profileData.account) {
         localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
+      } else {
+        localStorage.removeItem("macrodock-account");
       }
 
       renderAuthState(profileData.user);
+
+      if (isAuthPage() && !profileData.account && sessionStorage.getItem("macrodock-needs-metrics") === "true") {
+        redirectToMetricsSetup();
+        return;
+      }
 
       if (isAuthPage() && mode === "register") {
         redirectToMetricsSetup();
@@ -1142,6 +1170,13 @@ async function authenticate(mode) {
       localStorage.setItem("macrodock-account", JSON.stringify(data.user.account));
       renderAccountSettings();
       renderTargetSummary();
+    } else {
+      localStorage.removeItem("macrodock-account");
+    }
+
+    if (isAuthPage() && !data.user?.account && sessionStorage.getItem("macrodock-needs-metrics") === "true") {
+      redirectToMetricsSetup();
+      return;
     }
 
     if (isAuthPage() && mode === "register") {
@@ -1686,6 +1721,18 @@ if (elements.themeToggle) {
 });
 }
 
+function setSettingsSectionOpen(targetId, isOpen) {
+  const target = targetId ? document.getElementById(targetId) : null;
+  const toggle = targetId ? document.querySelector(`[data-settings-toggle="${targetId}"]`) : null;
+
+  if (!target || !toggle) {
+    return;
+  }
+
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  target.hidden = !isOpen;
+}
+
 if (elements.saveFoodApiBase) {
   elements.saveFoodApiBase.addEventListener("click", saveFoodApiBase);
 }
@@ -1709,18 +1756,19 @@ if (elements.accountForm) {
   elements.accountForm.addEventListener("submit", saveAccountFromForm);
 }
 
+if (elements.startMetricsSetup) {
+  elements.startMetricsSetup.addEventListener("click", () => {
+    setSettingsSectionOpen("accountFields", true);
+    setSettingsSectionOpen("goalFields", true);
+    document.getElementById("accountSection")?.scrollIntoView({ block: "start" });
+  });
+}
+
 document.querySelectorAll("[data-settings-toggle]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const targetId = toggle.getAttribute("data-settings-toggle");
-    const target = targetId ? document.getElementById(targetId) : null;
-
-    if (!target) {
-      return;
-    }
-
     const isExpanded = toggle.getAttribute("aria-expanded") === "true";
-    toggle.setAttribute("aria-expanded", String(!isExpanded));
-    target.hidden = isExpanded;
+    setSettingsSectionOpen(targetId, !isExpanded);
   });
 });
 
