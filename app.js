@@ -1608,9 +1608,17 @@ function render() {
 
 function setCustomFoodMode(isCustom, shouldFocus = true) {
   isCustomFoodMode = isCustom;
+  elements.foodForm.classList.toggle("is-custom-mode", isCustom);
   elements.customFoodFields.hidden = !isCustom;
   elements.useCustomFood.textContent = isCustom ? "Use starter foods" : "Add custom food";
-  renderFoodSearch();
+
+  if (isCustom) {
+    elements.foodSearchStatus.textContent = "Enter the nutrition details for your custom food.";
+    elements.foodResults.hidden = true;
+  } else {
+    elements.foodResults.hidden = false;
+    renderFoodSearch();
+  }
 
   if (!shouldFocus) {
     return;
@@ -1709,6 +1717,8 @@ if (elements.addWater) {
 if (elements.foodSearch) {
   elements.foodSearch.addEventListener("input", () => {
     isCustomFoodMode = false;
+    elements.foodForm.classList.remove("is-custom-mode");
+    elements.foodResults.hidden = false;
     elements.customFoodFields.hidden = true;
     elements.useCustomFood.textContent = "Add custom food";
     clearTimeout(foodSearchTimer);
@@ -1727,6 +1737,8 @@ if (elements.foodResults) {
     const results = JSON.parse(elements.foodResults.dataset.results || "[]");
     selectedFood = results[Number(resultButton.dataset.foodResult)] || selectedFood;
     isCustomFoodMode = false;
+    elements.foodForm.classList.remove("is-custom-mode");
+    elements.foodResults.hidden = false;
     elements.customFoodFields.hidden = true;
     elements.useCustomFood.textContent = "Add custom food";
     renderFoodResults(results);

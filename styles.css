@@ -751,6 +751,10 @@ select:focus {
   display: none;
 }
 
+#foodForm.is-custom-mode .food-results {
+  display: none;
+}
+
 .primary-button,
 .ghost-button {
   min-height: 44px;
@@ -833,6 +837,9 @@ select:focus {
 
 .dialog-sheet {
   width: min(520px, 100%);
+  max-height: min(82vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -1544,10 +1551,11 @@ body.dialog-open {
 
   .dialog-backdrop {
     align-items: flex-end;
-    padding: 16px 12px calc(76px + env(safe-area-inset-bottom));
+    padding: 16px 12px calc(104px + env(safe-area-inset-bottom));
   }
 
   .dialog-sheet {
+    max-height: calc(100dvh - 132px - env(safe-area-inset-top));
     padding: 20px;
   }
 
