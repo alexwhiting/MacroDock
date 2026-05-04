@@ -294,8 +294,7 @@ body[data-theme="dark"] .nav-item.active {
   text-align: center;
 }
 
-.date-step-button,
-.date-today-button {
+.date-step-button {
   display: inline-grid;
   place-items: center;
   min-width: 42px;
@@ -311,12 +310,6 @@ body[data-theme="dark"] .nav-item.active {
 .date-step-button {
   font-size: 1.5rem;
   line-height: 1;
-}
-
-.date-today-button {
-  padding: 0 12px;
-  font-size: 0.78rem;
-  text-transform: uppercase;
 }
 
 .dashboard-date-button:hover {
@@ -1325,12 +1318,6 @@ body.dialog-open {
     min-height: 42px;
     padding-inline: 4px;
     font-size: 1.08rem;
-  }
-
-  .date-today-button {
-    min-height: 36px;
-    order: 5;
-    width: auto;
   }
 
   .main-dashboard .dashboard-sketch-column {

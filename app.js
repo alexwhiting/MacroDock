@@ -1,4 +1,4 @@
-const defaultCalorieGoal = 2150;
+const defaultCalorieGoal = null;
 const macroGoals = {
   protein: 160,
   carbs: 245,
@@ -442,7 +442,6 @@ const elements = {
   dashboardDateLabel: document.querySelector("#dashboardDateLabel"),
   prevDiaryDate: document.querySelector("#prevDiaryDate"),
   nextDiaryDate: document.querySelector("#nextDiaryDate"),
-  todayDiaryDate: document.querySelector("#todayDiaryDate"),
   workoutLog: document.querySelector("#workoutLog"),
   macroBars: document.querySelector("#macroBars"),
   microBars: document.querySelector("#microBars"),
@@ -578,7 +577,7 @@ function renderTargetSummary() {
   const calorieTarget = getCalorieGoal();
 
   if (elements.targetCalories) {
-    elements.targetCalories.textContent = `${formatNumber(calorieTarget)} kcal`;
+    elements.targetCalories.textContent = calorieTarget ? `${formatNumber(calorieTarget)} kcal` : "Set goal";
   }
 
   if (elements.profilePlanText) {
@@ -1363,6 +1362,19 @@ function renderDashboard() {
   const foodTotals = totalsFromFood();
   const workoutTotals = totalsFromWorkouts();
   const calorieGoal = getCalorieGoal();
+  if (!calorieGoal) {
+    elements.remainingCalories.textContent = "Set goal";
+    elements.consumedCalories.textContent = formatNumber(foodTotals.calories);
+    elements.burnedCalories.textContent = formatNumber(workoutTotals.calories);
+    elements.calorieRing.style.strokeDashoffset = 314;
+    elements.caloriePercent.textContent = "0%";
+    elements.waterCount.textContent = waterForDiary();
+    elements.activeMinutes.textContent = `${workoutTotals.minutes} min`;
+    elements.activityBar.style.width = `${Math.min((workoutTotals.minutes / 45) * 100, 100)}%`;
+    renderTargetSummary();
+    syncDiaryDateUi();
+    return;
+  }
   const netCalories = Math.max(foodTotals.calories - workoutTotals.calories, 0);
   const remaining = calorieGoal - netCalories;
   const calorieProgress = Math.min(netCalories / calorieGoal, 1);
@@ -1660,10 +1672,6 @@ if (elements.prevDiaryDate) {
 
 if (elements.nextDiaryDate) {
   elements.nextDiaryDate.addEventListener("click", () => setDiaryDate(shiftIsoDate(state.diaryDate, 1)));
-}
-
-if (elements.todayDiaryDate) {
-  elements.todayDiaryDate.addEventListener("click", () => setDiaryDate(diaryTodayIso()));
 }
 
 if (elements.mealSections) {
