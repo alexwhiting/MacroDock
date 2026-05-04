@@ -494,10 +494,14 @@ function getInitialTheme() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(theme) {
+function applyTheme(theme, options = {}) {
+  const { sync = false } = options;
   const isDark = theme === "dark";
 
-  document.body.dataset.theme = theme;
+  document.documentElement.dataset.theme = theme;
+  if (document.body) {
+    document.body.dataset.theme = theme;
+  }
 
   if (elements.themeToggle && elements.themeLabel) {
     elements.themeToggle.setAttribute("aria-pressed", String(isDark));
@@ -506,6 +510,35 @@ function applyTheme(theme) {
   }
 
   localStorage.setItem("macrodock-theme", theme);
+
+  if (sync) {
+    saveThemePreference(theme);
+  }
+}
+
+function saveThemePreference(theme) {
+  if (getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id) {
+    supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
+      method: "POST",
+      headers: {
+        Prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({
+        user_id: currentSupabaseUser.id,
+        name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+        account: storedAccount(),
+        theme
+      })
+    }).catch((error) => {
+      console.warn("Theme cloud save failed", error);
+    });
+    return;
+  }
+
+  const account = storedAccount();
+  if (account) {
+    localStorage.setItem("macrodock-account", JSON.stringify({ ...account, theme }));
+  }
 }
 
 function saveState() {
@@ -616,7 +649,8 @@ function saveAccountFromForm(event) {
           body: JSON.stringify({
             user_id: authData.id,
             name: account.name,
-            account
+            account,
+            theme: getInitialTheme()
           })
         }))
         .then((rows) => {
@@ -863,6 +897,7 @@ function supabasePublicUser(user, account = null) {
     id: user.id,
     name: user.user_metadata?.name || user.email || "Logged in",
     email: user.email,
+    theme: user.theme || null,
     account
   };
 }
@@ -870,15 +905,23 @@ function supabasePublicUser(user, account = null) {
 async function loadSupabaseProfile(user) {
   currentSupabaseUser = user;
   const params = new URLSearchParams({
-    select: "account,name",
+    select: "account,name,theme",
     user_id: `eq.${user.id}`
   });
   const rows = await supabaseRequest(`/rest/v1/profiles?${params.toString()}`);
   const profile = Array.isArray(rows) ? rows[0] : null;
+  const profileUser = {
+    ...user,
+    theme: profile?.theme || null
+  };
+
+  if (profile?.theme === "dark" || profile?.theme === "light") {
+    applyTheme(profile.theme);
+  }
 
   return {
     account: profile?.account || null,
-    user: supabasePublicUser(user, profile?.account || null)
+    user: supabasePublicUser(profileUser, profile?.account || null)
   };
 }
 
@@ -1611,8 +1654,8 @@ if (elements.foodDialog) {
 
 if (elements.themeToggle) {
   elements.themeToggle.addEventListener("click", () => {
-  const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-  applyTheme(nextTheme);
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(nextTheme, { sync: true });
 });
 }
 

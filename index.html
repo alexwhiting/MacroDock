@@ -9,6 +9,9 @@
     <meta name="apple-mobile-web-app-title" content="MacroDock" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>MacroDock</title>
+    <script>
+      document.documentElement.dataset.theme = localStorage.getItem("macrodock-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    </script>
     <link rel="manifest" href="./site.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
     <link rel="apple-touch-icon" href="./icon.svg" />

@@ -2,8 +2,12 @@ create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   name text,
   account jsonb,
+  theme text,
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists theme text;
 
 alter table public.profiles enable row level security;
 
