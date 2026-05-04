@@ -7,15 +7,21 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+drop policy if exists "Users can read their own profile" on public.profiles;
+
 create policy "Users can read their own profile"
   on public.profiles
   for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own profile" on public.profiles;
+
 create policy "Users can insert their own profile"
   on public.profiles
   for insert
   with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own profile" on public.profiles;
 
 create policy "Users can update their own profile"
   on public.profiles
@@ -52,15 +58,21 @@ create table if not exists public.diary_days (
 
 alter table public.diary_days enable row level security;
 
+drop policy if exists "Users can read their own diary days" on public.diary_days;
+
 create policy "Users can read their own diary days"
   on public.diary_days
   for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own diary days" on public.diary_days;
+
 create policy "Users can insert their own diary days"
   on public.diary_days
   for insert
   with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own diary days" on public.diary_days;
 
 create policy "Users can update their own diary days"
   on public.diary_days
