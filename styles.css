@@ -651,6 +651,12 @@ body[data-theme="dark"] .dashboard-date-button:hover {
   gap: 12px;
 }
 
+.three-column {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -1114,27 +1120,6 @@ body.dialog-open {
   gap: 14px;
 }
 
-.settings-prompt {
-  display: grid;
-  gap: 5px;
-  border: 1px solid rgba(98, 199, 132, 0.45);
-  border-radius: 8px;
-  background: rgba(98, 199, 132, 0.14);
-  color: var(--ink);
-  padding: 14px;
-}
-
-.settings-prompt strong,
-.settings-prompt span {
-  display: block;
-}
-
-.settings-prompt span {
-  color: var(--muted);
-  font-size: 0.92rem;
-  font-weight: 700;
-}
-
 .settings-section-card {
   padding: 0;
   overflow: hidden;
@@ -1163,6 +1148,16 @@ body.dialog-open {
   background: var(--surface-muted);
   color: var(--green-dark);
   font-weight: 900;
+}
+
+.settings-section-icon svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .settings-section-head strong,
@@ -1211,6 +1206,51 @@ body.dialog-open {
   margin-top: 18px;
 }
 
+.settings-inline-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.settings-danger-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-save-button {
+  max-width: 680px;
+  min-height: 52px;
+}
+
+.toggle-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 12px 14px;
+}
+
+.toggle-row input {
+  width: 22px;
+  min-height: 22px;
+  accent-color: var(--green-dark);
+}
+
+.danger-button {
+  min-height: 44px;
+  border: 1px solid rgba(224, 94, 94, 0.45);
+  border-radius: 8px;
+  background: var(--danger-bg);
+  color: var(--red);
+  cursor: pointer;
+  font-weight: 900;
+}
+
 .theme-button-inline {
   display: inline-flex;
   align-items: center;
@@ -1251,6 +1291,11 @@ body.dialog-open {
   background: var(--bg);
 }
 
+.page-onboarding {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
 .auth-screen {
   min-height: 100vh;
   display: grid;
@@ -1258,8 +1303,16 @@ body.dialog-open {
   padding: calc(28px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
 }
 
+.onboarding-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+  padding: calc(22px + env(safe-area-inset-top)) 16px calc(26px + env(safe-area-inset-bottom));
+}
+
 .auth-splash,
-.auth-card {
+.auth-card,
+.onboarding-card {
   width: min(100%, 420px);
 }
 
@@ -1319,6 +1372,33 @@ body.dialog-open {
   background: var(--surface);
   box-shadow: var(--shadow);
   padding: 22px;
+}
+
+.onboarding-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.onboarding-card h1 {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 1.72rem;
+  line-height: 1.05;
+}
+
+.onboarding-copy {
+  color: var(--muted);
+  margin: -6px 0 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.onboarding-form .account-summary {
+  margin-top: 0;
 }
 
 .auth-card-head {
@@ -1514,7 +1594,11 @@ body.dialog-open {
     background: rgba(98, 199, 132, 0.2);
     transform: translateX(calc(var(--active-tab-index, 0) * (100% + 2px)));
     box-shadow: 0 8px 18px rgba(39, 122, 77, 0.12);
-    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1), background 160ms ease, box-shadow 160ms ease;
+    transition: none;
+  }
+
+  .nav-list.is-ready::before {
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background 140ms ease, box-shadow 140ms ease;
   }
 
   .nav-item {
@@ -1642,6 +1726,15 @@ body.dialog-open {
   }
 
   .account-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .three-column {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-inline-action,
+  .settings-danger-row {
     grid-template-columns: 1fr;
   }
 

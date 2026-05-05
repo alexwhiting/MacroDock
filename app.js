@@ -1,5 +1,5 @@
 const defaultCalorieGoal = null;
-const macroGoals = {
+const defaultMacroGoals = {
   protein: 160,
   carbs: 245,
   fat: 72
@@ -252,6 +252,11 @@ const state = JSON.parse(localStorage.getItem("macrodock-state")) || {
   diaryDate: null
 };
 
+const supabaseProfileColumns = {
+  theme: true,
+  recentFoods: true
+};
+
 function diaryTodayIso() {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
@@ -480,15 +485,47 @@ const elements = {
   accountHeight: document.querySelector("#accountHeight"),
   accountWeight: document.querySelector("#accountWeight"),
   accountActivity: document.querySelector("#accountActivity"),
+  accountEmail: document.querySelector("#accountEmail"),
+  accountUsername: document.querySelector("#accountUsername"),
+  accountUnits: document.querySelector("#accountUnits"),
+  accountNewPassword: document.querySelector("#accountNewPassword"),
+  changePasswordButton: document.querySelector("#changePasswordButton"),
+  deleteAccountButton: document.querySelector("#deleteAccountButton"),
+  settingsLogoutButton: document.querySelector("#settingsLogoutButton"),
   goalWeight: document.querySelector("#goalWeight"),
   goalDate: document.querySelector("#goalDate"),
+  currentGoal: document.querySelector("#currentGoal"),
+  weeklyRate: document.querySelector("#weeklyRate"),
+  calorieMode: document.querySelector("#calorieMode"),
+  calorieTargetInput: document.querySelector("#calorieTargetInput"),
+  macroMode: document.querySelector("#macroMode"),
+  proteinTarget: document.querySelector("#proteinTarget"),
+  carbsTarget: document.querySelector("#carbsTarget"),
+  fatTarget: document.querySelector("#fatTarget"),
+  dietaryPreference: document.querySelector("#dietaryPreference"),
+  mealStructure: document.querySelector("#mealStructure"),
+  calorieDistribution: document.querySelector("#calorieDistribution"),
+  stepIntegration: document.querySelector("#stepIntegration"),
+  dailyStepEstimate: document.querySelector("#dailyStepEstimate"),
+  workoutFrequency: document.querySelector("#workoutFrequency"),
+  workoutType: document.querySelector("#workoutType"),
+  defaultDiaryView: document.querySelector("#defaultDiaryView"),
+  barcodeAutoOpen: document.querySelector("#barcodeAutoOpen"),
+  quickAddCalories: document.querySelector("#quickAddCalories"),
+  showNetCalories: document.querySelector("#showNetCalories"),
+  focusMode: document.querySelector("#focusMode"),
+  mealLoggingReminders: document.querySelector("#mealLoggingReminders"),
+  waterReminders: document.querySelector("#waterReminders"),
+  weighInReminders: document.querySelector("#weighInReminders"),
+  goalProgressAlerts: document.querySelector("#goalProgressAlerts"),
+  streakNotifications: document.querySelector("#streakNotifications"),
+  accentColor: document.querySelector("#accentColor"),
+  dashboardLayout: document.querySelector("#dashboardLayout"),
   accountSummary: document.querySelector("#accountSummary"),
   closeFoodForm: document.querySelector("#closeFoodForm"),
   foodDialog: document.querySelector("#foodDialog"),
   themeToggle: document.querySelector("#themeToggle"),
   themeLabel: document.querySelector("#themeLabel"),
-  metricsPrompt: document.querySelector("#metricsPrompt"),
-  startMetricsSetup: document.querySelector("#startMetricsSetup"),
   foodApiBase: document.querySelector("#foodApiBase"),
   saveFoodApiBase: document.querySelector("#saveFoodApiBase"),
   foodApiStatus: document.querySelector("#foodApiStatus")
@@ -526,20 +563,112 @@ function applyTheme(theme, options = {}) {
   }
 }
 
+function applyAccentColor(accent) {
+  const palettes = {
+    green: { green: "#62c784", dark: "#277a4d", bg: "#dff5e6", ink: "#10241a" },
+    blue: { green: "#5d9cec", dark: "#2563a8", bg: "#e3efff", ink: "#0c1d33" },
+    orange: { green: "#f4a261", dark: "#b85d1b", bg: "#fff0df", ink: "#301708" },
+    rose: { green: "#ee6f8f", dark: "#ad3155", bg: "#ffe6ed", ink: "#32101a" }
+  };
+  const palette = palettes[accent] || palettes.green;
+
+  document.documentElement.style.setProperty("--green", palette.green);
+  document.documentElement.style.setProperty("--green-dark", palette.dark);
+  document.documentElement.style.setProperty("--brand-bg", palette.bg);
+  document.documentElement.style.setProperty("--brand-ink", palette.ink);
+  localStorage.setItem("macrodock-accent", accent || "green");
+}
+
+function applyStoredPreferences(account = storedAccount()) {
+  const preferences = accountPreferences(account);
+  applyAccentColor(preferences.accentColor);
+
+  if (document.body) {
+    document.body.dataset.dashboardLayout = preferences.dashboardLayout;
+    document.body.dataset.diaryView = preferences.defaultDiaryView;
+  }
+}
+
+function profileColumnSelect() {
+  const columns = ["account", "name"];
+
+  if (supabaseProfileColumns.theme) {
+    columns.push("theme");
+  }
+
+  if (supabaseProfileColumns.recentFoods) {
+    columns.push("recent_foods");
+  }
+
+  return columns.join(",");
+}
+
+function markMissingProfileColumn(error) {
+  const message = String(error?.message || "").toLowerCase();
+
+  if (message.includes("recent_foods")) {
+    supabaseProfileColumns.recentFoods = false;
+    return true;
+  }
+
+  if (message.includes("profiles.theme") || message.includes("theme")) {
+    supabaseProfileColumns.theme = false;
+    return true;
+  }
+
+  return false;
+}
+
+function profilePayload({ userId, name, account, theme, recentFoods }) {
+  const payload = {
+    user_id: userId,
+    name,
+    account
+  };
+
+  if (supabaseProfileColumns.theme) {
+    payload.theme = theme;
+  }
+
+  if (supabaseProfileColumns.recentFoods) {
+    payload.recent_foods = recentFoods;
+  }
+
+  return payload;
+}
+
+async function upsertSupabaseProfile(profile, options = {}) {
+  const prefer = options.returnRepresentation
+    ? "resolution=merge-duplicates,return=representation"
+    : "resolution=merge-duplicates";
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
+        method: "POST",
+        headers: {
+          Prefer: prefer
+        },
+        body: JSON.stringify(profilePayload(profile))
+      });
+    } catch (error) {
+      if (!markMissingProfileColumn(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Profile save failed because the profiles table is missing expected columns.");
+}
+
 function saveThemePreference(theme) {
   if (getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id) {
-    supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
-      method: "POST",
-      headers: {
-        Prefer: "resolution=merge-duplicates"
-      },
-      body: JSON.stringify({
-        user_id: currentSupabaseUser.id,
-        name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
-        account: storedAccount(),
-        theme,
-        recent_foods: state.recentFoods || []
-      })
+    upsertSupabaseProfile({
+      userId: currentSupabaseUser.id,
+      name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+      account: storedAccount(),
+      theme,
+      recentFoods: state.recentFoods || []
     }).catch((error) => {
       console.warn("Theme cloud save failed", error);
     });
@@ -557,18 +686,12 @@ function saveRecentFoodsPreference() {
     return;
   }
 
-  supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
-    method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates"
-    },
-    body: JSON.stringify({
-      user_id: currentSupabaseUser.id,
-      name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
-      account: storedAccount(),
-      theme: getInitialTheme(),
-      recent_foods: state.recentFoods || []
-    })
+  upsertSupabaseProfile({
+    userId: currentSupabaseUser.id,
+    name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+    account: storedAccount(),
+    theme: getInitialTheme(),
+    recentFoods: state.recentFoods || []
   }).catch((error) => {
     console.warn("Recent foods cloud save failed", error);
   });
@@ -597,6 +720,7 @@ function calculateAccountTargets(account) {
   const age = Math.max(Number(account.age) || 0, 0);
   const activityFactor = Math.max(Number(account.activityFactor) || 1.2, 1.2);
   const targetWeightKg = Math.max(Number(account.targetWeightKg) || weightKg, 0);
+  const preferences = accountPreferences(account);
   const sexConstant = account.sex === "female" ? -161 : 5;
   const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + sexConstant;
   const tdee = bmr * activityFactor;
@@ -604,8 +728,18 @@ function calculateAccountTargets(account) {
   const targetDate = account.targetDate ? new Date(`${account.targetDate}T00:00:00`) : null;
   const daysToGoal = targetDate ? Math.max(Math.ceil((targetDate - today) / 86400000), 1) : 0;
   const weightDeltaKg = targetWeightKg - weightKg;
-  const dailyGoalAdjustment = daysToGoal > 0 ? (weightDeltaKg * 7700) / daysToGoal : 0;
-  const calorieTarget = Math.max(Math.round(tdee + dailyGoalAdjustment), 1000);
+  const weeklyRateAdjustment = (Number(preferences.weeklyRate) || 0) * 500;
+  const goalAdjustment = preferences.currentGoal === "lose"
+    ? -weeklyRateAdjustment
+    : preferences.currentGoal === "gain"
+      ? weeklyRateAdjustment
+      : 0;
+  const targetDateAdjustment = daysToGoal > 0 ? (weightDeltaKg * 7700) / daysToGoal : 0;
+  const dailyGoalAdjustment = preferences.currentGoal === "maintain" ? 0 : goalAdjustment || targetDateAdjustment;
+  const autoCalorieTarget = Math.max(Math.round(tdee + dailyGoalAdjustment), 1000);
+  const calorieTarget = preferences.calorieMode === "manual" && Number(preferences.calorieTarget)
+    ? Math.max(Math.round(Number(preferences.calorieTarget)), 1000)
+    : autoCalorieTarget;
 
   return {
     bmr: Math.round(bmr),
@@ -651,6 +785,113 @@ function renderTargetSummary() {
   }
 }
 
+function defaultPreferences() {
+  return {
+    username: "",
+    units: "metric",
+    currentGoal: "maintain",
+    weeklyRate: "1",
+    calorieMode: "auto",
+    calorieTarget: "",
+    macroMode: "auto",
+    macroTargets: { ...defaultMacroGoals },
+    dietaryPreference: "none",
+    mealStructure: "3",
+    calorieDistribution: "even",
+    stepIntegration: "none",
+    dailyStepEstimate: 7000,
+    workoutFrequency: "3",
+    workoutType: "mixed",
+    defaultDiaryView: "both",
+    barcodeAutoOpen: false,
+    quickAddCalories: true,
+    showNetCalories: true,
+    focusMode: "daily",
+    mealLoggingReminders: false,
+    waterReminders: false,
+    weighInReminders: false,
+    goalProgressAlerts: true,
+    streakNotifications: true,
+    accentColor: "green",
+    dashboardLayout: "balanced"
+  };
+}
+
+function accountPreferences(account = storedAccount()) {
+  const preferences = account?.preferences || {};
+
+  return {
+    ...defaultPreferences(),
+    ...preferences,
+    macroTargets: {
+      ...defaultMacroGoals,
+      ...(preferences.macroTargets || {})
+    }
+  };
+}
+
+function getMacroGoals() {
+  const preferences = accountPreferences();
+
+  if (preferences.macroMode === "manual") {
+    return {
+      protein: Number(preferences.macroTargets.protein) || defaultMacroGoals.protein,
+      carbs: Number(preferences.macroTargets.carbs) || defaultMacroGoals.carbs,
+      fat: Number(preferences.macroTargets.fat) || defaultMacroGoals.fat
+    };
+  }
+
+  const calories = getCalorieGoal() || 2150;
+  return {
+    protein: Math.round((calories * 0.3) / 4),
+    carbs: Math.round((calories * 0.4) / 4),
+    fat: Math.round((calories * 0.3) / 9)
+  };
+}
+
+function checkboxValue(element) {
+  return Boolean(element?.checked);
+}
+
+function collectSettingsPreferences() {
+  const previous = accountPreferences();
+
+  return {
+    ...previous,
+    username: elements.accountUsername?.value.trim() || "",
+    units: elements.accountUnits?.value || "metric",
+    currentGoal: elements.currentGoal?.value || "maintain",
+    weeklyRate: elements.weeklyRate?.value || "1",
+    calorieMode: elements.calorieMode?.value || "auto",
+    calorieTarget: Number(elements.calorieTargetInput?.value) || "",
+    macroMode: elements.macroMode?.value || "auto",
+    macroTargets: {
+      protein: Number(elements.proteinTarget?.value) || defaultMacroGoals.protein,
+      carbs: Number(elements.carbsTarget?.value) || defaultMacroGoals.carbs,
+      fat: Number(elements.fatTarget?.value) || defaultMacroGoals.fat
+    },
+    dietaryPreference: elements.dietaryPreference?.value || "none",
+    mealStructure: elements.mealStructure?.value || "3",
+    calorieDistribution: elements.calorieDistribution?.value || "even",
+    stepIntegration: elements.stepIntegration?.value || "none",
+    dailyStepEstimate: Number(elements.dailyStepEstimate?.value) || 7000,
+    workoutFrequency: elements.workoutFrequency?.value || "3",
+    workoutType: elements.workoutType?.value || "mixed",
+    defaultDiaryView: elements.defaultDiaryView?.value || "both",
+    barcodeAutoOpen: checkboxValue(elements.barcodeAutoOpen),
+    quickAddCalories: checkboxValue(elements.quickAddCalories),
+    showNetCalories: checkboxValue(elements.showNetCalories),
+    focusMode: elements.focusMode?.value || "daily",
+    mealLoggingReminders: checkboxValue(elements.mealLoggingReminders),
+    waterReminders: checkboxValue(elements.waterReminders),
+    weighInReminders: checkboxValue(elements.weighInReminders),
+    goalProgressAlerts: checkboxValue(elements.goalProgressAlerts),
+    streakNotifications: checkboxValue(elements.streakNotifications),
+    accentColor: elements.accentColor?.value || "green",
+    dashboardLayout: elements.dashboardLayout?.value || "balanced"
+  };
+}
+
 function saveAccountFromForm(event) {
   event.preventDefault();
 
@@ -667,36 +908,43 @@ function saveAccountFromForm(event) {
     heightCm: Number(elements.accountHeight.value),
     weightKg: Number(elements.accountWeight.value),
     activityFactor: Number(elements.accountActivity.value),
-    targetWeightKg: Number(elements.goalWeight.value),
-    targetDate: elements.goalDate.value
+    targetWeightKg: Number(elements.goalWeight.value) || Number(elements.accountWeight.value),
+    targetDate: elements.goalDate.value,
+    preferences: collectSettingsPreferences()
   };
   const targets = calculateAccountTargets(accountInput);
   const account = { ...accountInput, ...targets };
 
   localStorage.setItem("macrodock-account", JSON.stringify(account));
+  applyStoredPreferences(account);
   renderAccountSettings();
   renderTargetSummary();
+
+  const finishAccountSave = (user) => {
+    if (user) {
+      renderAuthState(user);
+    }
+    sessionStorage.removeItem("macrodock-needs-metrics");
+    if (isOnboardingPage()) {
+      window.location.href = "./index.html";
+    }
+  };
 
   if (getAuthToken()) {
     if (getAuthProvider() === "supabase" && supabaseEnabled()) {
       supabaseRequest("/auth/v1/user")
-        .then((authData) => supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
-          method: "POST",
-          headers: {
-            Prefer: "resolution=merge-duplicates,return=representation"
-          },
-          body: JSON.stringify({
-            user_id: authData.id,
+        .then((authData) => upsertSupabaseProfile({
+            userId: authData.id,
             name: account.name,
             account,
             theme: getInitialTheme(),
-            recent_foods: state.recentFoods || []
-          })
-        }))
+            recentFoods: state.recentFoods || []
+          }, { returnRepresentation: true }))
         .then((rows) => {
           const savedAccount = rows?.[0]?.account || account;
           localStorage.setItem("macrodock-account", JSON.stringify(savedAccount));
-          renderAuthState({
+          applyStoredPreferences(savedAccount);
+          finishAccountSave({
             name: savedAccount.name,
             account: savedAccount
           });
@@ -716,15 +964,37 @@ function saveAccountFromForm(event) {
       .then((data) => {
         if (data.account) {
           localStorage.setItem("macrodock-account", JSON.stringify(data.account));
+          applyStoredPreferences(data.account);
         }
-        renderAuthState(data.user);
+        finishAccountSave(data.user);
       })
       .catch((error) => {
         if (elements.accountSummary) {
           elements.accountSummary.insertAdjacentHTML("beforeend", `<p>${escapeHtml(error.message)}</p>`);
         }
       });
+    return;
   }
+
+  finishAccountSave();
+}
+
+function redirectAuthenticatedUserWithoutAccount(account) {
+  if (!isProtectedPage() || isAuthPage() || isOnboardingPage() || account || !getAuthToken()) {
+    return false;
+  }
+
+  redirectToMetricsSetup();
+  return true;
+}
+
+function redirectOnboardingUserWithAccount() {
+  if (!isOnboardingPage() || !storedAccount()) {
+    return false;
+  }
+
+  window.location.href = "./index.html";
+  return true;
 }
 
 function renderAccountSettings() {
@@ -733,11 +1003,39 @@ function renderAccountSettings() {
   }
 
   const account = storedAccount();
-  const shouldPromptMetrics = sessionStorage.getItem("macrodock-needs-metrics") === "true" || (!account && getAuthToken());
+  const preferences = accountPreferences(account);
+  const email = currentSupabaseUser?.email || localStorage.getItem("macrodock-user-email") || "";
 
-  if (elements.metricsPrompt) {
-    elements.metricsPrompt.hidden = !shouldPromptMetrics;
-  }
+  if (elements.accountEmail) elements.accountEmail.value = email;
+  if (elements.accountUsername) elements.accountUsername.value = preferences.username || "";
+  if (elements.accountUnits) elements.accountUnits.value = preferences.units || "metric";
+  if (elements.currentGoal) elements.currentGoal.value = preferences.currentGoal || "maintain";
+  if (elements.weeklyRate) elements.weeklyRate.value = preferences.weeklyRate || "1";
+  if (elements.calorieMode) elements.calorieMode.value = preferences.calorieMode || "auto";
+  if (elements.calorieTargetInput) elements.calorieTargetInput.value = preferences.calorieTarget || account?.calorieTarget || "";
+  if (elements.macroMode) elements.macroMode.value = preferences.macroMode || "auto";
+  if (elements.proteinTarget) elements.proteinTarget.value = preferences.macroTargets.protein || defaultMacroGoals.protein;
+  if (elements.carbsTarget) elements.carbsTarget.value = preferences.macroTargets.carbs || defaultMacroGoals.carbs;
+  if (elements.fatTarget) elements.fatTarget.value = preferences.macroTargets.fat || defaultMacroGoals.fat;
+  if (elements.dietaryPreference) elements.dietaryPreference.value = preferences.dietaryPreference || "none";
+  if (elements.mealStructure) elements.mealStructure.value = preferences.mealStructure || "3";
+  if (elements.calorieDistribution) elements.calorieDistribution.value = preferences.calorieDistribution || "even";
+  if (elements.stepIntegration) elements.stepIntegration.value = preferences.stepIntegration || "none";
+  if (elements.dailyStepEstimate) elements.dailyStepEstimate.value = preferences.dailyStepEstimate || 7000;
+  if (elements.workoutFrequency) elements.workoutFrequency.value = preferences.workoutFrequency || "3";
+  if (elements.workoutType) elements.workoutType.value = preferences.workoutType || "mixed";
+  if (elements.defaultDiaryView) elements.defaultDiaryView.value = preferences.defaultDiaryView || "both";
+  if (elements.barcodeAutoOpen) elements.barcodeAutoOpen.checked = Boolean(preferences.barcodeAutoOpen);
+  if (elements.quickAddCalories) elements.quickAddCalories.checked = Boolean(preferences.quickAddCalories);
+  if (elements.showNetCalories) elements.showNetCalories.checked = Boolean(preferences.showNetCalories);
+  if (elements.focusMode) elements.focusMode.value = preferences.focusMode || "daily";
+  if (elements.mealLoggingReminders) elements.mealLoggingReminders.checked = Boolean(preferences.mealLoggingReminders);
+  if (elements.waterReminders) elements.waterReminders.checked = Boolean(preferences.waterReminders);
+  if (elements.weighInReminders) elements.weighInReminders.checked = Boolean(preferences.weighInReminders);
+  if (elements.goalProgressAlerts) elements.goalProgressAlerts.checked = Boolean(preferences.goalProgressAlerts);
+  if (elements.streakNotifications) elements.streakNotifications.checked = Boolean(preferences.streakNotifications);
+  if (elements.accentColor) elements.accentColor.value = preferences.accentColor || "green";
+  if (elements.dashboardLayout) elements.dashboardLayout.value = preferences.dashboardLayout || "balanced";
 
   if (account) {
     elements.accountName.value = account.name || "";
@@ -766,9 +1064,6 @@ function renderAccountSettings() {
       <p>${goalDescription(account)}. Daily adjustment: ${account.dailyGoalAdjustment >= 0 ? "+" : ""}${formatNumber(account.dailyGoalAdjustment)} kcal.</p>
     `;
     sessionStorage.removeItem("macrodock-needs-metrics");
-    if (elements.metricsPrompt) {
-      elements.metricsPrompt.hidden = true;
-    }
     return;
   }
 
@@ -859,8 +1154,12 @@ function isAuthPage() {
   return currentPageFile() === "auth.html";
 }
 
+function isOnboardingPage() {
+  return currentPageFile() === "onboarding.html";
+}
+
 function isProtectedPage() {
-  return ["", "index.html", "settings.html", "progress.html", "social.html"].includes(currentPageFile());
+  return ["", "index.html", "settings.html", "progress.html", "social.html", "onboarding.html"].includes(currentPageFile());
 }
 
 function redirectAfterAuth() {
@@ -872,7 +1171,7 @@ function redirectAfterAuth() {
 function redirectToMetricsSetup() {
   sessionStorage.setItem("macrodock-needs-metrics", "true");
   sessionStorage.removeItem("macrodock-post-auth");
-  window.location.href = "./settings.html#accountSection";
+  window.location.href = "./onboarding.html";
 }
 
 function redirectToAuth() {
@@ -950,6 +1249,7 @@ async function supabaseRequest(path, options = {}) {
   if (!response.ok) {
     const error = new Error(data.error_description || data.msg || data.message || data.error || "Supabase request failed");
     error.status = response.status;
+    error.code = data.code || data.error_code || data.error || "";
     throw error;
   }
 
@@ -968,11 +1268,27 @@ function supabasePublicUser(user, account = null) {
 
 async function loadSupabaseProfile(user) {
   currentSupabaseUser = user;
-  const params = new URLSearchParams({
-    select: "account,name,theme,recent_foods",
-    user_id: `eq.${user.id}`
-  });
-  const rows = await supabaseRequest(`/rest/v1/profiles?${params.toString()}`);
+  if (user?.email) {
+    localStorage.setItem("macrodock-user-email", user.email);
+  }
+  let rows = [];
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const params = new URLSearchParams({
+      select: profileColumnSelect(),
+      user_id: `eq.${user.id}`
+    });
+
+    try {
+      rows = await supabaseRequest(`/rest/v1/profiles?${params.toString()}`);
+      break;
+    } catch (error) {
+      if (!markMissingProfileColumn(error)) {
+        throw error;
+      }
+    }
+  }
+
   const profile = Array.isArray(rows) ? rows[0] : null;
   const profileUser = {
     ...user,
@@ -1052,6 +1368,7 @@ async function loadSupabaseAccount() {
 
   if (profileData.account) {
     localStorage.setItem("macrodock-account", JSON.stringify(profileData.account));
+    applyStoredPreferences(profileData.account);
   } else {
     localStorage.removeItem("macrodock-account");
   }
@@ -1082,6 +1399,7 @@ async function loadRemoteAccount() {
 
     if (data.account) {
       localStorage.setItem("macrodock-account", JSON.stringify(data.account));
+      applyStoredPreferences(data.account);
     } else {
       localStorage.removeItem("macrodock-account");
     }
@@ -1133,6 +1451,25 @@ function renderAuthState(user) {
     : "Supabase is not configured yet. Local backend login is available for development.";
 }
 
+function authErrorMessage(error, mode) {
+  const message = String(error?.message || "Authentication failed");
+  const lowerMessage = message.toLowerCase();
+
+  if (mode === "register" && lowerMessage.includes("already registered")) {
+    return "That email already has an account. Log in instead, or use a different email.";
+  }
+
+  if (lowerMessage.includes("rate limit")) {
+    return "Too many account attempts in a short time. Wait a minute, then try logging in.";
+  }
+
+  if (lowerMessage.includes("recent_foods")) {
+    return "Your account exists, but the database needs the latest profile migration. Log in again after the schema update.";
+  }
+
+  return message;
+}
+
 async function authenticate(mode) {
   if (mode === "switch-login" || mode === "switch-register") {
     setAuthMode(mode === "switch-login" ? "login" : "register");
@@ -1147,6 +1484,10 @@ async function authenticate(mode) {
 
   try {
     if (mode === "register") {
+      if (!payload.name) {
+        elements.authPanel.textContent = "Enter your name to create an account.";
+        return;
+      }
       localStorage.removeItem("macrodock-account");
       sessionStorage.setItem("macrodock-needs-metrics", "true");
     }
@@ -1228,7 +1569,7 @@ async function authenticate(mode) {
       redirectAfterAuth();
     }
   } catch (error) {
-    elements.authPanel.textContent = error.message;
+    elements.authPanel.textContent = authErrorMessage(error, mode);
   }
 }
 
@@ -1247,6 +1588,62 @@ async function logout() {
   currentSupabaseUser = null;
   renderAuthState();
   redirectToAuth();
+}
+
+async function changePassword() {
+  const password = elements.accountNewPassword?.value || "";
+
+  if (password.length < 8) {
+    elements.accountSummary.textContent = "Enter a new password with at least 8 characters.";
+    return;
+  }
+
+  try {
+    if (getAuthProvider() === "supabase" && supabaseEnabled()) {
+      await supabaseRequest("/auth/v1/user", {
+        method: "PUT",
+        body: JSON.stringify({ password })
+      });
+      elements.accountNewPassword.value = "";
+      elements.accountSummary.textContent = "Password updated.";
+      return;
+    }
+
+    elements.accountSummary.textContent = "Password changes are only available with Supabase accounts right now.";
+  } catch (error) {
+    elements.accountSummary.textContent = error.message;
+  }
+}
+
+async function deleteAccountData() {
+  const confirmed = window.confirm("Delete your MacroDock profile data and log out? This does not remove the Supabase auth user yet.");
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    if (getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id) {
+      await upsertSupabaseProfile({
+        userId: currentSupabaseUser.id,
+        name: currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+        account: null,
+        theme: getInitialTheme(),
+        recentFoods: []
+      });
+    }
+  } catch (error) {
+    console.warn("Profile data deletion failed", error);
+  }
+
+  localStorage.removeItem("macrodock-account");
+  state.foods = [];
+  state.workouts = [];
+  state.water = 0;
+  state.waterByDate = {};
+  state.recentFoods = [];
+  saveState();
+  logout();
 }
 
 function defaultFoodApiBase() {
@@ -1571,6 +1968,8 @@ function renderDashboard() {
   elements.activityBar.style.width = `${Math.min((workoutTotals.minutes / 45) * 100, 100)}%`;
   renderTargetSummary();
 
+  const macroGoals = getMacroGoals();
+
   renderMetricRows(elements.macroBars, [
     {
       label: "Protein",
@@ -1850,12 +2249,16 @@ if (elements.accountForm) {
   elements.accountForm.addEventListener("submit", saveAccountFromForm);
 }
 
-if (elements.startMetricsSetup) {
-  elements.startMetricsSetup.addEventListener("click", () => {
-    setSettingsSectionOpen("accountFields", true);
-    setSettingsSectionOpen("goalFields", true);
-    document.getElementById("accountSection")?.scrollIntoView({ block: "start" });
-  });
+if (elements.changePasswordButton) {
+  elements.changePasswordButton.addEventListener("click", changePassword);
+}
+
+if (elements.deleteAccountButton) {
+  elements.deleteAccountButton.addEventListener("click", deleteAccountData);
+}
+
+if (elements.settingsLogoutButton) {
+  elements.settingsLogoutButton.addEventListener("click", logout);
 }
 
 document.querySelectorAll("[data-settings-toggle]").forEach((toggle) => {
@@ -1977,13 +2380,14 @@ function syncNavActive() {
   });
   document.querySelectorAll(".nav-list").forEach((nav) => {
     nav.style.setProperty("--active-tab-index", String(Math.max(activeIndex, 0)));
+    window.requestAnimationFrame(() => {
+      nav.classList.add("is-ready");
+    });
   });
 }
 
 document.querySelectorAll(".nav-item").forEach((link) => {
   link.addEventListener("click", (event) => {
-    const nav = link.closest(".nav-list");
-    const nextIndex = nav ? Array.from(nav.children).indexOf(link) : -1;
     const href = link.getAttribute("href") || "";
     const currentPath = window.location.pathname.split("/").pop() || "index.html";
     const nextPath = href.split("#")[0].replace(/^\.\//, "") || currentPath;
@@ -1992,12 +2396,6 @@ document.querySelectorAll(".nav-item").forEach((link) => {
     if (isSamePage) {
       event.preventDefault();
       return;
-    }
-
-    if (nav && nextIndex >= 0) {
-      nav.style.setProperty("--active-tab-index", String(nextIndex));
-      nav.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
-      link.classList.add("active");
     }
   });
 });
@@ -2025,45 +2423,10 @@ function watchDateRollover() {
   }, 60000);
 }
 
-async function initializeApp() {
-  if ("scrollRestoration" in history) {
-    history.scrollRestoration = "manual";
-  }
-
-  if (isAuthPage()) {
-    window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
-  }
-
-  await loadRuntimeConfig();
-  applyTheme(getInitialTheme());
-  renderFoodApiSettings();
-
-  if (isAuthPage()) {
-    renderAccountSettings();
-    renderTargetSummary();
-    setAuthMode("login");
-
-    if (getAuthToken()) {
-      await loadRemoteAccount();
-      if (getAuthToken()) {
-        redirectAfterAuth();
-      }
-    }
-
-    return;
-  }
-
-  if (isProtectedPage() && !getAuthToken()) {
-    redirectToAuth();
-    return;
-  }
-
-  await loadRemoteAccount();
-
-  if (isProtectedPage() && !getAuthToken()) {
-    redirectToAuth();
-    return;
-  }
+function renderCurrentPageFromCache() {
+  applyStoredPreferences();
+  renderAccountSettings();
+  renderTargetSummary();
 
   if (elements.foodSearch) {
     renderFoodSearch();
@@ -2076,10 +2439,67 @@ async function initializeApp() {
       window.scrollTo(0, 0);
       document.body.classList.remove("is-hydrating");
     });
-  } else {
+  }
+}
+
+async function initializeApp() {
+  if ("scrollRestoration" in history) {
+    history.scrollRestoration = "manual";
+  }
+
+  if (isAuthPage()) {
+    window.setTimeout(() => document.body.classList.remove("is-loading"), 700);
+  }
+
+  const runtimeConfigPromise = loadRuntimeConfig();
+  applyTheme(getInitialTheme());
+  applyAccentColor(localStorage.getItem("macrodock-accent") || accountPreferences().accentColor);
+  renderFoodApiSettings();
+
+  if (isAuthPage()) {
     renderAccountSettings();
     renderTargetSummary();
+    setAuthMode("login");
+
+    if (getAuthToken()) {
+      await runtimeConfigPromise;
+      const account = await loadRemoteAccount();
+      if (getAuthToken()) {
+        if (!account) {
+          redirectToMetricsSetup();
+          return;
+        }
+        redirectAfterAuth();
+      }
+    }
+
+    return;
   }
+
+  if (isProtectedPage() && !getAuthToken()) {
+    redirectToAuth();
+    return;
+  }
+
+  if (redirectOnboardingUserWithAccount()) {
+    return;
+  }
+
+  renderCurrentPageFromCache();
+
+  runtimeConfigPromise
+    .then(() => loadRemoteAccount())
+    .then((account) => {
+      if (isProtectedPage() && !getAuthToken()) {
+        redirectToAuth();
+        return;
+      }
+
+      redirectAuthenticatedUserWithoutAccount(account);
+    })
+    .catch((error) => {
+      console.warn("Background account refresh failed", error);
+    });
 }
 
 initializeApp();

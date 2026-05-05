@@ -87,117 +87,151 @@
         </header>
 
         <section class="settings-page">
-          <div id="metricsPrompt" class="settings-prompt" hidden>
-            <strong>Complete your setup</strong>
-            <span>Add your metrics so MacroDock can calculate your calorie target.</span>
-            <button id="startMetricsSetup" class="ghost-button" type="button">Enter metrics</button>
-          </div>
-
           <form id="accountForm" class="settings-form">
             <article id="accountSection" class="panel settings-panel settings-section-card">
               <button class="settings-section-head" type="button" data-settings-toggle="accountFields" aria-expanded="false">
-                <span class="settings-section-icon" aria-hidden="true">A</span>
-                <span>
-                  <strong>Account</strong>
-                  <small>Profile and sign-in</small>
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
+                <span><strong>Profile</strong><small>Identity, units, and account controls</small></span>
                 <span class="settings-chevron" aria-hidden="true">›</span>
               </button>
 
               <div id="accountFields" class="settings-section-body" hidden>
-                <div id="authPanel" class="account-summary" aria-live="polite">
-                  Checking account status...
-                </div>
-                <label>
-                  Name
-                  <input id="accountName" type="text" autocomplete="name" placeholder="Your name" />
-                </label>
+                <div id="authPanel" class="account-summary" aria-live="polite">Checking account status...</div>
+                <label>Name<input id="accountName" type="text" autocomplete="name" placeholder="Your name" /></label>
+                <label>Username<input id="accountUsername" type="text" autocomplete="username" placeholder="macrodock_user" /></label>
+                <label>Email<input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com" readonly /></label>
                 <div class="two-column">
-                  <label>
-                    Sex
-                    <select id="accountSex">
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </label>
-                  <label>
-                    Age
-                    <input id="accountAge" type="number" min="13" max="100" step="1" placeholder="Age" />
-                  </label>
-                  <label>
-                    Height (cm)
-                    <input id="accountHeight" type="number" min="100" max="230" step="1" placeholder="Height" />
-                  </label>
-                  <label>
-                    Weight (kg)
-                    <input id="accountWeight" type="number" min="35" max="250" step="0.1" placeholder="Weight" />
-                  </label>
+                  <label>Sex<select id="accountSex"><option value="male">Male</option><option value="female">Female</option></select></label>
+                  <label>Age<input id="accountAge" type="number" min="13" max="100" step="1" placeholder="Age" /></label>
+                  <label>Height (cm)<input id="accountHeight" type="number" min="100" max="230" step="1" placeholder="Height" /></label>
+                  <label>Weight (kg)<input id="accountWeight" type="number" min="35" max="250" step="0.1" placeholder="Weight" /></label>
+                </div>
+                <label>Units<select id="accountUnits"><option value="metric">Metric</option><option value="imperial">Imperial</option></select></label>
+                <div class="settings-inline-action">
+                  <label>New password<input id="accountNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></label>
+                  <button id="changePasswordButton" class="ghost-button" type="button">Change</button>
+                </div>
+                <div class="settings-danger-row">
+                  <button id="deleteAccountButton" class="danger-button" type="button">Delete app data</button>
+                  <button id="settingsLogoutButton" class="ghost-button" type="button">Log out</button>
                 </div>
               </div>
             </article>
 
             <article id="goalsSection" class="panel settings-panel settings-section-card">
               <button class="settings-section-head" type="button" data-settings-toggle="goalFields" aria-expanded="false">
-                <span class="settings-section-icon" aria-hidden="true">G</span>
-                <span>
-                  <strong>Goals</strong>
-                  <small>Calories and target weight</small>
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4" /><path d="M12 3v3M21 12h-3M12 21v-3M3 12h3" /></svg>
                 </span>
+                <span><strong>Goals</strong><small>Weight, calorie, and macro targets</small></span>
                 <span class="settings-chevron" aria-hidden="true">›</span>
               </button>
 
               <div id="goalFields" class="settings-section-body" hidden>
-                <label>
-                  Activity level
-                  <select id="accountActivity">
-                    <option value="1.2">Sedentary</option>
-                    <option value="1.375">Light</option>
-                    <option value="1.55" selected>Moderate</option>
-                    <option value="1.725">Active</option>
-                    <option value="1.9">Very active</option>
-                  </select>
-                </label>
                 <div class="two-column">
-                  <label>
-                    Goal weight (kg)
-                    <input id="goalWeight" type="number" min="35" max="250" step="0.1" placeholder="Goal weight" />
-                  </label>
-                  <label>
-                    Goal date
-                    <input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" />
-                  </label>
+                  <label>Current goal<select id="currentGoal"><option value="lose">Lose</option><option value="maintain">Maintain</option><option value="gain">Gain</option></select></label>
+                  <label>Weekly rate<select id="weeklyRate"><option value="0.5">0.5 lb</option><option value="1">1 lb</option><option value="1.5">1.5 lb</option><option value="2">2 lb</option></select></label>
+                  <label>Target weight (kg)<input id="goalWeight" type="number" min="35" max="250" step="0.1" placeholder="Goal weight" /></label>
+                  <label>Goal date<input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" /></label>
+                  <label>Activity level<select id="accountActivity"><option value="1.2">Sedentary</option><option value="1.375">Light</option><option value="1.55">Moderate</option><option value="1.725">Active</option><option value="1.9">Very active</option></select></label>
+                  <label>Calorie target<select id="calorieMode"><option value="auto">Auto calculated</option><option value="manual">Manual</option></select></label>
                 </div>
-                <button class="primary-button" type="submit">Save metrics</button>
-                <div id="accountSummary" class="account-summary" aria-live="polite">
-                  Add your metrics to calculate your daily calorie target.
+                <label>Manual calories<input id="calorieTargetInput" type="number" min="1000" max="6000" step="10" placeholder="Auto if blank" /></label>
+                <label>Macro targets<select id="macroMode"><option value="auto">Auto calculated</option><option value="manual">Manual</option></select></label>
+                <div class="three-column">
+                  <label>Protein (g)<input id="proteinTarget" type="number" min="0" max="500" step="1" /></label>
+                  <label>Carbs (g)<input id="carbsTarget" type="number" min="0" max="800" step="1" /></label>
+                  <label>Fat (g)<input id="fatTarget" type="number" min="0" max="300" step="1" /></label>
                 </div>
+                <div id="accountSummary" class="account-summary" aria-live="polite">Add your metrics to calculate your daily calorie target.</div>
               </div>
             </article>
-          </form>
 
-          <article id="appearanceSection" class="panel settings-panel settings-section-card">
-            <button class="settings-section-head" type="button" data-settings-toggle="appearanceFields" aria-expanded="false">
-              <span class="settings-section-icon" aria-hidden="true">T</span>
-              <span>
-                <strong>Appearance</strong>
-                <small>Theme and display</small>
-              </span>
-              <span class="settings-chevron" aria-hidden="true">›</span>
-            </button>
-
-            <div id="appearanceFields" class="settings-section-body" hidden>
-              <button id="themeToggle" class="settings-action-row" type="button" aria-pressed="false">
-                <span>
-                  <strong>Light and dark mode</strong>
-                  <small>Your choice is saved with your account.</small>
+            <article class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="nutritionFields" aria-expanded="false">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M7 21h10" /><path d="M12 21V8" /><path d="M5 8c5 0 7 2 7 7C7 15 5 13 5 8Z" /><path d="M19 4c-5 0-7 2-7 7 5 0 7-2 7-7Z" /></svg>
                 </span>
-                <span class="theme-button-inline">
-                  <span class="theme-icon" aria-hidden="true">D</span>
-                  <span id="themeLabel">Dark mode</span>
-                </span>
+                <span><strong>Nutrition</strong><small>Diet style and meal planning</small></span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
               </button>
-            </div>
-          </article>
+              <div id="nutritionFields" class="settings-section-body" hidden>
+                <label>Dietary preference<select id="dietaryPreference"><option value="none">None</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option><option value="keto">Keto</option><option value="paleo">Paleo</option><option value="high-protein">High protein</option></select></label>
+                <label>Meal structure<select id="mealStructure"><option value="2">2 meals</option><option value="3">3 meals</option><option value="4">4+ meals</option></select></label>
+                <label>Calorie distribution<select id="calorieDistribution"><option value="even">Even</option><option value="front-loaded">Front-loaded</option><option value="back-loaded">Back-loaded</option></select></label>
+              </div>
+            </article>
+
+            <article class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="activityFields" aria-expanded="false">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M13 4l-2 5 4 3-2 8" /><path d="M6 12l5-3" /><path d="M15 12l4 2" /><circle cx="14" cy="3" r="1" /></svg>
+                </span>
+                <span><strong>Activity</strong><small>Steps, workouts, and exercise profile</small></span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
+              <div id="activityFields" class="settings-section-body" hidden>
+                <label>Step integration<select id="stepIntegration"><option value="none">None</option><option value="apple-health">Apple Health</option></select></label>
+                <label>Daily step estimate<input id="dailyStepEstimate" type="number" min="0" max="50000" step="500" /></label>
+                <label>Workout frequency<select id="workoutFrequency"><option value="0">Rarely</option><option value="2">1-2 days/week</option><option value="3">3 days/week</option><option value="5">4-5 days/week</option><option value="6">6+ days/week</option></select></label>
+                <label>Workout type<select id="workoutType"><option value="mixed">Mixed</option><option value="strength">Strength</option><option value="cardio">Cardio</option><option value="sports">Sports</option><option value="mobility">Mobility</option></select></label>
+              </div>
+            </article>
+
+            <article class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="trackingFields" aria-expanded="false">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-3" /></svg>
+                </span>
+                <span><strong>Tracking</strong><small>Diary defaults and logging behavior</small></span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
+              <div id="trackingFields" class="settings-section-body" hidden>
+                <label>Default diary view<select id="defaultDiaryView"><option value="calories">Calories</option><option value="macros">Macros</option><option value="both">Both</option></select></label>
+                <label>Focus<select id="focusMode"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label>
+                <label class="toggle-row"><span>Barcode scanner auto-open</span><input id="barcodeAutoOpen" type="checkbox" /></label>
+                <label class="toggle-row"><span>Quick add calories</span><input id="quickAddCalories" type="checkbox" /></label>
+                <label class="toggle-row"><span>Show net calories</span><input id="showNetCalories" type="checkbox" /></label>
+              </div>
+            </article>
+
+            <article class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="notificationFields" aria-expanded="false">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg>
+                </span>
+                <span><strong>Notifications</strong><small>Reminder and progress alerts</small></span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
+              <div id="notificationFields" class="settings-section-body" hidden>
+                <label class="toggle-row"><span>Meal logging reminders</span><input id="mealLoggingReminders" type="checkbox" /></label>
+                <label class="toggle-row"><span>Water reminders</span><input id="waterReminders" type="checkbox" /></label>
+                <label class="toggle-row"><span>Weigh-in reminders</span><input id="weighInReminders" type="checkbox" /></label>
+                <label class="toggle-row"><span>Goal progress alerts</span><input id="goalProgressAlerts" type="checkbox" /></label>
+                <label class="toggle-row"><span>Streak notifications</span><input id="streakNotifications" type="checkbox" /></label>
+              </div>
+            </article>
+
+            <article id="appearanceSection" class="panel settings-panel settings-section-card">
+              <button class="settings-section-head" type="button" data-settings-toggle="appearanceFields" aria-expanded="false">
+                <span class="settings-section-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="12" r="2.5" /><circle cx="8" cy="8" r="2.5" /><path d="M12 22a10 10 0 1 1 10-10c0 2-1 3-3 3h-2a2 2 0 0 0 0 4 2 2 0 0 1-1 3Z" /></svg>
+                </span>
+                <span><strong>Appearance</strong><small>Theme, color, and dashboard layout</small></span>
+                <span class="settings-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <div id="appearanceFields" class="settings-section-body" hidden>
+                <button id="themeToggle" class="settings-action-row" type="button" aria-pressed="false"><span><strong>Light and dark mode</strong><small>Your choice is saved with your account.</small></span><span class="theme-button-inline"><span class="theme-icon" aria-hidden="true">D</span><span id="themeLabel">Dark mode</span></span></button>
+                <label>Accent color<select id="accentColor"><option value="green">Green</option><option value="blue">Blue</option><option value="orange">Orange</option><option value="rose">Rose</option></select></label>
+                <label>Dashboard layout<select id="dashboardLayout"><option value="balanced">Balanced</option><option value="compact">Compact</option><option value="macro-first">Macro first</option></select></label>
+              </div>
+            </article>
+
+            <button class="primary-button settings-save-button" type="submit">Save settings</button>
+          </form>
 
           <div class="settings-advanced" hidden>
             <input id="foodApiBase" type="url" autocomplete="off" placeholder="http://localhost:8787" />
