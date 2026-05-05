@@ -420,6 +420,9 @@ let isHydratingDiary = false;
 let diarySaveTimer = null;
 let caloriePercentDisplay = 0;
 let caloriePercentFrame = null;
+let quaggaLoader = null;
+let barcodeDetectedHandler = null;
+let isBarcodeScannerActive = false;
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -430,6 +433,13 @@ const elements = {
   foodSearchStatus: document.querySelector("#foodSearchStatus"),
   foodResults: document.querySelector("#foodResults"),
   useCustomFood: document.querySelector("#useCustomFood"),
+  startBarcodeScan: document.querySelector("#startBarcodeScan"),
+  stopBarcodeScan: document.querySelector("#stopBarcodeScan"),
+  barcodeScannerPanel: document.querySelector("#barcodeScannerPanel"),
+  barcodeScannerViewport: document.querySelector("#barcodeScannerViewport"),
+  barcodeStatus: document.querySelector("#barcodeStatus"),
+  barcodeInput: document.querySelector("#barcodeInput"),
+  lookupBarcode: document.querySelector("#lookupBarcode"),
   customFoodFields: document.querySelector("#customFoodFields"),
   customFoodName: document.querySelector("#customFoodName"),
   customCalories: document.querySelector("#customCalories"),
@@ -1688,6 +1698,204 @@ function localFoodMatches(query, source = "all") {
     .slice(0, 12);
 }
 
+function nutrientValue(nutriments, keys) {
+  for (const key of keys) {
+    const value = Number(nutriments?.[key]);
+    if (Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return 0;
+}
+
+function foodFromOpenFoodFactsProduct(product, barcode) {
+  const nutriments = product?.nutriments || {};
+  const productName = product?.product_name || product?.product_name_en || product?.generic_name || `Barcode ${barcode}`;
+  const quantity = product?.serving_quantity || product?.serving_size || "100 g";
+  const brand = Array.isArray(product?.brands_tags)
+    ? product.brands_tags[0]
+    : product?.brands || "Open Food Facts";
+
+  return {
+    name: productName,
+    calories: nutrientValue(nutriments, ["energy-kcal_serving", "energy-kcal_100g", "energy-kcal"]),
+    protein: nutrientValue(nutriments, ["proteins_serving", "proteins_100g", "proteins"]),
+    carbs: nutrientValue(nutriments, ["carbohydrates_serving", "carbohydrates_100g", "carbohydrates"]),
+    fat: nutrientValue(nutriments, ["fat_serving", "fat_100g", "fat"]),
+    fiber: nutrientValue(nutriments, ["fiber_serving", "fiber_100g", "fiber"]),
+    calcium: nutrientValue(nutriments, ["calcium_serving", "calcium_100g", "calcium"]) * 1000,
+    iron: nutrientValue(nutriments, ["iron_serving", "iron_100g", "iron"]) * 1000,
+    vitaminC: nutrientValue(nutriments, ["vitamin-c_serving", "vitamin-c_100g", "vitamin-c"]) * 1000,
+    potassium: nutrientValue(nutriments, ["potassium_serving", "potassium_100g", "potassium"]) * 1000,
+    source: `${brand}, ${quantity}`
+  };
+}
+
+function renderSingleBarcodeResult(food) {
+  selectedFood = food;
+  isCustomFoodMode = false;
+  activeFoodTab = "all";
+  elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
+  elements.foodForm.classList.remove("is-custom-mode");
+  elements.customFoodFields.hidden = true;
+  elements.foodResults.hidden = false;
+  elements.useCustomFood.textContent = "Add custom food";
+  elements.foodSearch.value = food.name;
+  elements.foodSearchStatus.textContent = "Barcode match found. Tap + to log it.";
+  renderFoodResults([food]);
+}
+
+async function lookupBarcode(barcode) {
+  const cleanBarcode = String(barcode || "").replace(/\D/g, "");
+
+  if (!cleanBarcode) {
+    if (elements.barcodeStatus) {
+      elements.barcodeStatus.textContent = "Enter or scan a barcode first.";
+    }
+    return;
+  }
+
+  if (elements.barcodeStatus) {
+    elements.barcodeStatus.textContent = `Looking up ${cleanBarcode}...`;
+  }
+  if (elements.foodSearchStatus) {
+    elements.foodSearchStatus.textContent = `Looking up barcode ${cleanBarcode}...`;
+  }
+
+  try {
+    const fields = "product_name,product_name_en,generic_name,brands,brands_tags,serving_quantity,serving_size,nutriments";
+    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json?fields=${encodeURIComponent(fields)}`);
+    const data = await response.json();
+
+    if (!response.ok || data.status === 0 || !data.product) {
+      throw new Error("No product found for that barcode. Add it as a custom food instead.");
+    }
+
+    const food = foodFromOpenFoodFactsProduct(data.product, cleanBarcode);
+    renderSingleBarcodeResult(food);
+    stopBarcodeScanner();
+  } catch (error) {
+    if (elements.foodSearchStatus) {
+      elements.foodSearchStatus.textContent = error.message;
+    }
+    if (elements.barcodeStatus) {
+      elements.barcodeStatus.textContent = error.message;
+    }
+  }
+}
+
+function loadQuagga() {
+  if (window.Quagga) {
+    return Promise.resolve(window.Quagga);
+  }
+
+  if (!quaggaLoader) {
+    quaggaLoader = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/@ericblade/quagga2/dist/quagga.min.js";
+      script.async = true;
+      script.onload = () => resolve(window.Quagga);
+      script.onerror = () => reject(new Error("Barcode scanner could not load. Enter the barcode manually."));
+      document.head.appendChild(script);
+    });
+  }
+
+  return quaggaLoader;
+}
+
+function stopBarcodeScanner() {
+  if (!isBarcodeScannerActive || !window.Quagga) {
+    if (elements.barcodeScannerPanel) {
+      elements.barcodeScannerPanel.hidden = true;
+    }
+    return;
+  }
+
+  if (barcodeDetectedHandler) {
+    window.Quagga.offDetected(barcodeDetectedHandler);
+    barcodeDetectedHandler = null;
+  }
+
+  window.Quagga.stop();
+  isBarcodeScannerActive = false;
+
+  if (elements.barcodeScannerPanel) {
+    elements.barcodeScannerPanel.hidden = true;
+  }
+}
+
+async function startBarcodeScanner() {
+  if (!elements.barcodeScannerPanel || !elements.barcodeScannerViewport) {
+    return;
+  }
+
+  elements.barcodeScannerPanel.hidden = false;
+  elements.barcodeScannerViewport.innerHTML = "";
+  elements.barcodeStatus.textContent = "Loading camera scanner...";
+
+  try {
+    const Quagga = await loadQuagga();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera access is not available here. Enter the barcode manually.");
+    }
+
+    stopBarcodeScanner();
+    elements.barcodeScannerPanel.hidden = false;
+    elements.barcodeStatus.textContent = "Allow camera access, then center the barcode in the frame.";
+
+    await new Promise((resolve, reject) => {
+      Quagga.init(
+        {
+          inputStream: {
+            type: "LiveStream",
+            target: elements.barcodeScannerViewport,
+            constraints: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          },
+          locator: {
+            patchSize: "medium",
+            halfSample: true
+          },
+          decoder: {
+            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
+          },
+          locate: true
+        },
+        (error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        }
+      );
+    });
+
+    barcodeDetectedHandler = (result) => {
+      const code = result?.codeResult?.code || "";
+      if (!code) {
+        return;
+      }
+      elements.barcodeInput.value = code;
+      elements.barcodeStatus.textContent = `Barcode ${code} detected.`;
+      stopBarcodeScanner();
+      lookupBarcode(code);
+    };
+
+    Quagga.onDetected(barcodeDetectedHandler);
+    Quagga.start();
+    isBarcodeScannerActive = true;
+  } catch (error) {
+    isBarcodeScannerActive = false;
+    elements.barcodeStatus.textContent = error.message || "Barcode scanner unavailable. Enter the barcode manually.";
+  }
+}
+
 function foodForHistory(food) {
   return {
     name: food.name,
@@ -2080,8 +2288,11 @@ function setFoodDialogOpen(isOpen) {
     elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
     latestFoodSearchToken++;
     setCustomFoodMode(false, false);
-  } else if (elements.dashboardDateButton) {
+  } else {
+    stopBarcodeScanner();
+    if (elements.dashboardDateButton) {
     elements.dashboardDateButton.focus();
+    }
   }
 }
 
@@ -2190,6 +2401,27 @@ if (elements.foodResults) {
 if (elements.useCustomFood) {
   elements.useCustomFood.addEventListener("click", () => {
     setCustomFoodMode(!isCustomFoodMode);
+  });
+}
+
+if (elements.startBarcodeScan) {
+  elements.startBarcodeScan.addEventListener("click", startBarcodeScanner);
+}
+
+if (elements.stopBarcodeScan) {
+  elements.stopBarcodeScan.addEventListener("click", stopBarcodeScanner);
+}
+
+if (elements.lookupBarcode) {
+  elements.lookupBarcode.addEventListener("click", () => lookupBarcode(elements.barcodeInput.value));
+}
+
+if (elements.barcodeInput) {
+  elements.barcodeInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      lookupBarcode(elements.barcodeInput.value);
+    }
   });
 }
 

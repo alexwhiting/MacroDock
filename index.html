@@ -151,6 +151,25 @@
                 <span aria-hidden="true">⌕</span>
                 <input id="foodSearch" type="search" autocomplete="off" placeholder="Search foods, brands, flavors..." />
               </label>
+              <div class="barcode-tools">
+                <button id="startBarcodeScan" class="barcode-scan-button" type="button">
+                  <span aria-hidden="true">▣</span>
+                  Scan barcode
+                </button>
+                <label class="barcode-manual">
+                  <span class="sr-only">Barcode number</span>
+                  <input id="barcodeInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter barcode" />
+                </label>
+                <button id="lookupBarcode" class="ghost-button" type="button">Lookup</button>
+              </div>
+              <div id="barcodeScannerPanel" class="barcode-scanner-panel" hidden>
+                <div class="barcode-scanner-head">
+                  <strong>Point camera at barcode</strong>
+                  <button id="stopBarcodeScan" class="icon-button" type="button" aria-label="Close barcode scanner">&times;</button>
+                </div>
+                <div id="barcodeScannerViewport" class="barcode-scanner-viewport" aria-live="polite"></div>
+                <p id="barcodeStatus" class="food-search-status">Camera scanner is starting...</p>
+              </div>
               <div class="food-tabs" role="tablist" aria-label="Food sources">
                 <button class="food-tab is-active" type="button" data-food-tab="all">All</button>
                 <button class="food-tab" type="button" data-food-tab="history">History</button>
