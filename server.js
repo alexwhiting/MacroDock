@@ -8,8 +8,6 @@ const rootDir = __dirname;
 const cacheDir = path.join(rootDir, "data");
 const cacheFile = path.join(cacheDir, "food-cache.json");
 const usersFile = path.join(cacheDir, "users.json");
-const fdcSearchUrl = "https://api.nal.usda.gov/fdc/v1/foods/search";
-const fdcApiKey = process.env.USDA_API_KEY || "DEMO_KEY";
 const supabaseUrl = process.env.SUPABASE_URL || "https://ulmwocfyvocswblavfdj.supabase.co";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY";
 
@@ -232,54 +230,7 @@ function localMatches(query) {
     .slice(0, 12);
 }
 
-function nutrientValue(food, names) {
-  const nutrients = food.foodNutrients || [];
-  const match = nutrients.find((nutrient) => {
-    const name = String(nutrient.nutrientName || nutrient.name || "").toLowerCase();
-    return names.some((target) => name.includes(target));
-  });
-
-  return Number(match?.value ?? 0) || 0;
-}
-
-function normalizeFdcFood(food) {
-  const brand = food.brandOwner || food.brandName || "";
-  const description = food.description || food.lowercaseDescription || "USDA food";
-
-  return {
-    name: brand ? `${description} (${brand})` : description,
-    calories: nutrientValue(food, ["energy"]),
-    protein: nutrientValue(food, ["protein"]),
-    carbs: nutrientValue(food, ["carbohydrate"]),
-    fat: nutrientValue(food, ["total lipid", "total fat"]),
-    fiber: nutrientValue(food, ["fiber"]),
-    calcium: nutrientValue(food, ["calcium"]),
-    iron: nutrientValue(food, ["iron"]),
-    vitaminC: nutrientValue(food, ["vitamin c", "ascorbic"]),
-    potassium: nutrientValue(food, ["potassium"]),
-    source: food.dataType || "USDA"
-  };
-}
-
-async function searchUsda(query) {
-  const params = new URLSearchParams({
-    api_key: fdcApiKey,
-    query,
-    pageSize: "10"
-  });
-  const response = await fetch(`${fdcSearchUrl}?${params.toString()}`);
-
-  if (!response.ok) {
-    throw new Error(`USDA search failed with ${response.status}`);
-  }
-
-  const data = await response.json();
-  return (data.foods || [])
-    .map(normalizeFdcFood)
-    .filter((food) => food.calories || food.protein || food.carbs || food.fat);
-}
-
-async function handleFoodSearch(request, response, url) {
+function handleFoodSearch(request, response, url) {
   const query = (url.searchParams.get("q") || "").trim();
 
   if (query.length < 2) {
@@ -288,15 +239,7 @@ async function handleFoodSearch(request, response, url) {
   }
 
   const local = localMatches(query);
-
-  try {
-    const remote = await searchUsda(query);
-    const cache = dedupeFoods([...readCache(), ...remote]).slice(0, 500);
-    writeCache(cache);
-    sendJson(response, 200, { source: "backend", foods: dedupeFoods([...remote, ...local]).slice(0, 12) });
-  } catch {
-    sendJson(response, 200, { source: "local", warning: "remote_unavailable", foods: local });
-  }
+  sendJson(response, 200, { source: "local", foods: local });
 }
 
 function serveStatic(request, response, url) {

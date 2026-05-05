@@ -22,18 +22,12 @@ GET /api/foods/search?q=apple
 
 ## Food Search
 
-The app searches the MacroDock backend first. The backend:
+The app currently uses local starter foods and each user's recent food history. The backend:
 
 - searches common seeded foods immediately
-- searches cached USDA results
-- calls USDA FoodData Central server-side when available
-- caches successful USDA results in `data/food-cache.json`
-
-For better USDA limits, start the server with:
-
-```bash
-USDA_API_KEY=your_key_here npm start
-```
+- does not require a USDA API key
+- does not call a third-party food database yet
+- supports custom foods from the app UI
 
 ## Account Calorie Target
 

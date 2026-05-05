@@ -3,11 +3,15 @@ create table if not exists public.profiles (
   name text,
   account jsonb,
   theme text,
+  recent_foods jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
 );
 
 alter table public.profiles
   add column if not exists theme text;
+
+alter table public.profiles
+  add column if not exists recent_foods jsonb not null default '[]'::jsonb;
 
 alter table public.profiles enable row level security;
 

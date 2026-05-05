@@ -248,6 +248,7 @@ const state = JSON.parse(localStorage.getItem("macrodock-state")) || {
   workouts: [],
   water: 0,
   waterByDate: {},
+  recentFoods: [],
   diaryDate: null
 };
 
@@ -264,6 +265,9 @@ function normalizeDiaryState() {
   state.lastToday = today;
   if (!state.waterByDate) {
     state.waterByDate = {};
+  }
+  if (!Array.isArray(state.recentFoods)) {
+    state.recentFoods = [];
   }
   if (typeof state.water === "number" && state.water > 0 && state.waterByDate[today] === undefined) {
     state.waterByDate[today] = state.water;
@@ -405,6 +409,7 @@ let selectedFood = foods[0];
 let foodSearchTimer;
 let latestFoodSearchToken = 0;
 let isCustomFoodMode = false;
+let activeFoodTab = "all";
 let currentSupabaseUser = null;
 let isHydratingDiary = false;
 let diarySaveTimer = null;
@@ -432,6 +437,7 @@ const elements = {
   customVitaminC: document.querySelector("#customVitaminC"),
   customPotassium: document.querySelector("#customPotassium"),
   foodForm: document.querySelector("#foodForm"),
+  foodTabs: document.querySelectorAll("[data-food-tab]"),
   servingSize: document.querySelector("#servingSize"),
   mealSelect: document.querySelector("#mealSelect"),
   workoutForm: document.querySelector("#workoutForm"),
@@ -531,7 +537,8 @@ function saveThemePreference(theme) {
         user_id: currentSupabaseUser.id,
         name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
         account: storedAccount(),
-        theme
+        theme,
+        recent_foods: state.recentFoods || []
       })
     }).catch((error) => {
       console.warn("Theme cloud save failed", error);
@@ -543,6 +550,28 @@ function saveThemePreference(theme) {
   if (account) {
     localStorage.setItem("macrodock-account", JSON.stringify({ ...account, theme }));
   }
+}
+
+function saveRecentFoodsPreference() {
+  if (!(getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id)) {
+    return;
+  }
+
+  supabaseRequest("/rest/v1/profiles?on_conflict=user_id", {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=merge-duplicates"
+    },
+    body: JSON.stringify({
+      user_id: currentSupabaseUser.id,
+      name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+      account: storedAccount(),
+      theme: getInitialTheme(),
+      recent_foods: state.recentFoods || []
+    })
+  }).catch((error) => {
+    console.warn("Recent foods cloud save failed", error);
+  });
 }
 
 function saveState() {
@@ -660,7 +689,8 @@ function saveAccountFromForm(event) {
             user_id: authData.id,
             name: account.name,
             account,
-            theme: getInitialTheme()
+            theme: getInitialTheme(),
+            recent_foods: state.recentFoods || []
           })
         }))
         .then((rows) => {
@@ -891,7 +921,9 @@ async function apiRequest(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Request failed");
+    const error = new Error(data.error || "Request failed");
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -916,7 +948,9 @@ async function supabaseRequest(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error_description || data.msg || data.message || data.error || "Supabase request failed");
+    const error = new Error(data.error_description || data.msg || data.message || data.error || "Supabase request failed");
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -935,7 +969,7 @@ function supabasePublicUser(user, account = null) {
 async function loadSupabaseProfile(user) {
   currentSupabaseUser = user;
   const params = new URLSearchParams({
-    select: "account,name,theme",
+    select: "account,name,theme,recent_foods",
     user_id: `eq.${user.id}`
   });
   const rows = await supabaseRequest(`/rest/v1/profiles?${params.toString()}`);
@@ -948,6 +982,8 @@ async function loadSupabaseProfile(user) {
   if (profile?.theme === "dark" || profile?.theme === "light") {
     applyTheme(profile.theme);
   }
+  state.recentFoods = Array.isArray(profile?.recent_foods) ? profile.recent_foods : [];
+  saveState();
 
   return {
     account: profile?.account || null,
@@ -1059,9 +1095,11 @@ async function loadRemoteAccount() {
     }
 
     return data.account || null;
-  } catch {
-    setAuthToken("");
-    currentSupabaseUser = null;
+  } catch (error) {
+    if (error.status === 401 || error.status === 403) {
+      setAuthToken("");
+      currentSupabaseUser = null;
+    }
     renderAuthState();
     return null;
   }
@@ -1241,26 +1279,52 @@ function renderFoodApiSettings() {
   elements.foodApiStatus.textContent = savedApiBase ? "Food API URL saved on this device." : "Using the current app server when available.";
 }
 
-function localFoodMatches(query) {
-  return foods
-    .filter((food) => food.name.toLowerCase().includes(query.toLowerCase()))
-    .map((food) => ({ ...food, source: "Starter", serving: "Starter item" }))
-    .slice(0, 5);
+function dedupeFoodList(list) {
+  return list.filter((food, index, allFoods) => allFoods.findIndex((item) => item.name.toLowerCase() === food.name.toLowerCase()) === index);
 }
 
-async function searchBackendFoods(query) {
-  const params = new URLSearchParams({ q: query });
-  const response = await fetch(`${getFoodApiBase()}/api/foods/search?${params.toString()}`);
+function localFoodMatches(query, source = "all") {
+  const baseFoods = source === "history" ? state.recentFoods : dedupeFoodList([...state.recentFoods, ...foods]);
+  return baseFoods
+    .filter((food) => food.name.toLowerCase().includes(query.toLowerCase()))
+    .map((food) => ({ ...food, source: food.source || (source === "history" ? "History" : "Starter") }))
+    .slice(0, 12);
+}
 
-  if (!response.ok) {
-    throw new Error("Food backend request failed");
-  }
-
-  const data = await response.json();
+function foodForHistory(food) {
   return {
-    foods: data.foods || [],
-    source: data.source || "backend"
+    name: food.name,
+    calories: Number(food.calories) || 0,
+    protein: Number(food.protein) || 0,
+    carbs: Number(food.carbs) || 0,
+    fat: Number(food.fat) || 0,
+    fiber: Number(food.fiber) || 0,
+    calcium: Number(food.calcium) || 0,
+    iron: Number(food.iron) || 0,
+    vitaminC: Number(food.vitaminC) || 0,
+    potassium: Number(food.potassium) || 0,
+    source: food.source || "Recent"
   };
+}
+
+function addRecentFood(food) {
+  const nextFood = foodForHistory(food);
+  state.recentFoods = [nextFood, ...state.recentFoods.filter((item) => item.name.toLowerCase() !== nextFood.name.toLowerCase())].slice(0, 20);
+  saveRecentFoodsPreference();
+}
+
+function logFoodToMeal(food, servings = 1) {
+  const safeServings = Math.max(Number(servings) || 1, 0.25);
+  const loggedFood = { meal: elements.mealSelect.value, servings: safeServings, date: state.diaryDate };
+
+  Object.keys(food).forEach((key) => {
+    loggedFood[key] = typeof food[key] === "number" ? food[key] * safeServings : food[key];
+  });
+
+  state.foods.unshift(loggedFood);
+  addRecentFood(food);
+  render();
+  setFoodDialogOpen(false);
 }
 
 function totalsFromFood() {
@@ -1302,7 +1366,9 @@ function renderFoodResults(results) {
   }
 
   if (results.length === 0) {
-    elements.foodResults.innerHTML = '<div class="empty-state">No foods found. Add a custom food instead.</div>';
+    elements.foodResults.innerHTML = activeFoodTab === "history"
+      ? '<div class="empty-state">No recent foods yet. Logged foods will appear here.</div>'
+      : '<div class="empty-state">No foods found. Add a custom food instead.</div>';
     return;
   }
 
@@ -1315,7 +1381,7 @@ function renderFoodResults(results) {
             <strong>${escapeHtml(food.name)}</strong>
             <span>${formatNumber(food.calories)} kcal - ${formatNumber(food.protein)}g protein - ${formatNumber(food.carbs)}g carbs - ${formatNumber(food.fat)}g fat</span>
           </div>
-          <span class="food-source">${escapeHtml(food.source || "Food")}</span>
+          <span class="food-add-circle" aria-hidden="true">+</span>
         </button>
       `;
     })
@@ -1330,48 +1396,22 @@ function renderFoodSearch() {
   }
 
   const query = elements.foodSearch.value.trim();
+  const source = activeFoodTab === "history" ? "history" : "all";
 
   if (query.length < 2) {
-    const starterFoods = localFoodMatches("");
+    const starterFoods = localFoodMatches("", source);
     selectedFood = starterFoods[0] || foods[0];
-    elements.foodSearchStatus.textContent = "Type at least 2 characters to search your food database.";
+    elements.foodSearchStatus.textContent = activeFoodTab === "history" ? "History" : "All foods";
     renderFoodResults(starterFoods);
     return;
   }
 
-  const searchToken = ++latestFoodSearchToken;
-  const localResults = localFoodMatches(query);
+  latestFoodSearchToken++;
+  const localResults = localFoodMatches(query, source);
 
   selectedFood = localResults[0] || selectedFood;
-  elements.foodSearchStatus.textContent = "Searching your food database...";
+  elements.foodSearchStatus.textContent = localResults.length ? "Showing local matches." : "No local matches. Add a custom food instead.";
   renderFoodResults(localResults);
-
-  searchBackendFoods(query)
-    .then((backendResult) => {
-      if (searchToken !== latestFoodSearchToken) {
-        return;
-      }
-
-      const backendResults = backendResult.foods || [];
-      const combinedResults = [...backendResults, ...localResults]
-        .filter((food, index, allFoods) => allFoods.findIndex((item) => item.name === food.name) === index)
-        .slice(0, 8);
-      selectedFood = combinedResults[0] || selectedFood;
-      elements.foodSearchStatus.textContent = backendResults.length > 0
-        ? "Showing matches from your food database."
-        : "No database matches found. You can add a custom food.";
-      renderFoodResults(combinedResults);
-    })
-    .catch(() => {
-      if (searchToken !== latestFoodSearchToken) {
-        return;
-      }
-
-      elements.foodSearchStatus.textContent = localResults.length > 0
-        ? "Backend unavailable. Showing common foods saved on this device."
-        : "Backend unavailable. Add a custom food or start the local server.";
-      renderFoodResults(localResults);
-    });
 }
 
 function renderMetricRows(container, metrics) {
@@ -1637,6 +1677,8 @@ function setFoodDialogOpen(isOpen) {
 
   if (isOpen) {
     elements.foodSearch.value = "";
+    activeFoodTab = "all";
+    elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
     latestFoodSearchToken++;
     setCustomFoodMode(false, false);
   } else if (elements.dashboardDateButton) {
@@ -1664,13 +1706,8 @@ if (elements.foodForm) {
   event.preventDefault();
   const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
   const servings = Math.max(Number(elements.servingSize.value), 0.25);
-  const loggedFood = { meal: elements.mealSelect.value, servings, date: state.diaryDate };
-
-  Object.keys(food).forEach((key) => {
-    loggedFood[key] = typeof food[key] === "number" ? food[key] * servings : food[key];
-  });
-
-  state.foods.unshift(loggedFood);
+  const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
+  logFoodToMeal(foodToLog, servings);
   elements.servingSize.value = "1";
   elements.customFoodName.value = "";
   elements.customCalories.value = "0";
@@ -1682,8 +1719,6 @@ if (elements.foodForm) {
   elements.customIron.value = "0";
   elements.customVitaminC.value = "0";
   elements.customPotassium.value = "0";
-  render();
-  setFoodDialogOpen(false);
 });
 }
 
@@ -1726,6 +1761,19 @@ if (elements.foodSearch) {
   });
 }
 
+elements.foodTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    activeFoodTab = tab.dataset.foodTab || "all";
+    elements.foodTabs.forEach((item) => item.classList.toggle("is-active", item === tab));
+    isCustomFoodMode = false;
+    elements.foodForm.classList.remove("is-custom-mode");
+    elements.customFoodFields.hidden = true;
+    elements.foodResults.hidden = false;
+    elements.useCustomFood.textContent = "Add custom food";
+    renderFoodSearch();
+  });
+});
+
 if (elements.foodResults) {
   elements.foodResults.addEventListener("click", (event) => {
     const resultButton = event.target.closest("[data-food-result]");
@@ -1736,12 +1784,7 @@ if (elements.foodResults) {
 
     const results = JSON.parse(elements.foodResults.dataset.results || "[]");
     selectedFood = results[Number(resultButton.dataset.foodResult)] || selectedFood;
-    isCustomFoodMode = false;
-    elements.foodForm.classList.remove("is-custom-mode");
-    elements.foodResults.hidden = false;
-    elements.customFoodFields.hidden = true;
-    elements.useCustomFood.textContent = "Add custom food";
-    renderFoodResults(results);
+    logFoodToMeal(selectedFood, 1);
   });
 }
 
@@ -1941,22 +1984,20 @@ document.querySelectorAll(".nav-item").forEach((link) => {
   link.addEventListener("click", (event) => {
     const nav = link.closest(".nav-list");
     const nextIndex = nav ? Array.from(nav.children).indexOf(link) : -1;
+    const href = link.getAttribute("href") || "";
+    const currentPath = window.location.pathname.split("/").pop() || "index.html";
+    const nextPath = href.split("#")[0].replace(/^\.\//, "") || currentPath;
+    const isSamePage = href.startsWith("#") || nextPath === currentPath;
+
+    if (isSamePage) {
+      event.preventDefault();
+      return;
+    }
 
     if (nav && nextIndex >= 0) {
       nav.style.setProperty("--active-tab-index", String(nextIndex));
       nav.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
       link.classList.add("active");
-    }
-
-    const href = link.getAttribute("href") || "";
-    const currentPath = window.location.pathname.split("/").pop() || "index.html";
-    const nextPath = href.split("#")[0].replace(/^\.\//, "") || currentPath;
-
-    if (!href.startsWith("#") && nextPath !== currentPath && nav) {
-      event.preventDefault();
-      window.setTimeout(() => {
-        window.location.href = href;
-      }, 130);
     }
   });
 });
