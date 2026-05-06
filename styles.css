@@ -545,20 +545,38 @@ body[data-theme="dark"] .dashboard-date-button:hover {
   border: none;
   border-radius: 0;
   background: transparent;
+  cursor: pointer;
 }
 
-.meal-food-row strong {
+.meal-food-main {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.meal-food-main strong {
   display: block;
   font-size: 0.92rem;
   color: var(--ink);
 }
 
-.meal-food-row span {
+.meal-food-main span {
   display: block;
   margin-top: 2px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted);
+}
+
+.meal-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .topbar h1,
@@ -707,22 +725,10 @@ select:focus {
   font-size: 1.6rem;
 }
 
-.meal-title-select {
-  display: block;
+#foodDialogTitle {
   justify-self: center;
-  width: auto;
-}
-
-.meal-title-select select {
-  min-height: 42px;
-  border: 0;
-  background: transparent;
-  color: var(--green);
-  font-size: 1.25rem;
-  font-weight: 900;
-  text-align: center;
-  text-align-last: center;
-  padding: 0 28px 0 8px;
+  color: var(--ink);
+  font-size: 1.05rem;
 }
 
 .food-search-wrap {
@@ -744,76 +750,6 @@ select:focus {
   border-radius: 999px;
   padding-left: 52px;
   font-size: 16px;
-}
-
-.barcode-tools {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.barcode-scan-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--green-dark);
-  padding: 0 12px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.barcode-scan-button span {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.barcode-manual {
-  display: block;
-}
-
-.barcode-manual input {
-  min-height: 44px;
-}
-
-.barcode-scanner-panel {
-  display: grid;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--log-bg);
-  padding: 12px;
-}
-
-.barcode-scanner-panel[hidden] {
-  display: none;
-}
-
-.barcode-scanner-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.barcode-scanner-viewport {
-  position: relative;
-  min-height: 210px;
-  overflow: hidden;
-  border-radius: 10px;
-  background: #0b0f14;
-}
-
-.barcode-scanner-viewport video,
-.barcode-scanner-viewport canvas {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .food-tabs {
@@ -844,6 +780,84 @@ select:focus {
   gap: 10px;
   max-height: none;
   overflow: auto;
+}
+
+.food-search-view[hidden],
+.food-detail-view[hidden] {
+  display: none;
+}
+
+.food-detail-view {
+  display: grid;
+  gap: 14px;
+}
+
+.selected-food-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--log-bg);
+  padding: 14px;
+}
+
+.selected-food-card h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.12rem;
+  line-height: 1.2;
+}
+
+.selected-food-macros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.selected-food-macros div {
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px;
+}
+
+.selected-food-macros span,
+.selected-food-macros strong,
+.selected-food-macros small {
+  display: block;
+}
+
+.selected-food-macros span {
+  color: var(--green-dark);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.selected-food-macros strong {
+  color: var(--ink);
+  margin-top: 4px;
+  font-size: 1.1rem;
+}
+
+.selected-food-macros small {
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.selected-food-macros .selected-calorie-card {
+  display: grid;
+  align-content: center;
+  border-color: rgba(98, 199, 132, 0.3);
+}
+
+.selected-food-macros .selected-calorie-card span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.food-log-controls {
+  align-items: end;
 }
 
 .food-result-button {
@@ -931,11 +945,6 @@ select:focus {
   display: none;
 }
 
-#foodForm:not(.is-custom-mode) .custom-log-controls,
-#foodForm:not(.is-custom-mode) > .primary-button {
-  display: none;
-}
-
 .primary-button,
 .ghost-button {
   min-height: 44px;
@@ -952,6 +961,12 @@ select:focus {
 
 .primary-button:hover {
   background: var(--green-dark);
+}
+
+.primary-button:disabled,
+.ghost-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .ghost-button,
@@ -1808,8 +1823,8 @@ body.dialog-open {
     grid-template-columns: 1fr;
   }
 
-  .barcode-tools {
-    grid-template-columns: 1fr;
+  .selected-food-macros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .settings-action-row {

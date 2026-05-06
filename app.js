@@ -290,15 +290,23 @@ function normalizeDiaryState() {
 }
 
 function itemMatchesDiary(item) {
-  return (item.date || diaryTodayIso()) === state.diaryDate;
+  return itemMatchesDate(item, state.diaryDate);
+}
+
+function itemMatchesDate(item, date) {
+  return (item.date || diaryTodayIso()) === date;
 }
 
 function workoutMatchesDiary(workout) {
-  return (workout.date || diaryTodayIso()) === state.diaryDate;
+  return itemMatchesDate(workout, state.diaryDate);
 }
 
 function waterForDiary() {
-  return state.waterByDate?.[state.diaryDate] || 0;
+  return waterForDate(state.diaryDate);
+}
+
+function waterForDate(date) {
+  return state.waterByDate?.[date] || 0;
 }
 
 function setWaterForDiary(value) {
@@ -323,11 +331,19 @@ function mergeDiaryDay(date, diaryDay = {}) {
 }
 
 function currentDiaryPayload() {
+  return diaryPayloadForDate(state.diaryDate);
+}
+
+function diaryPayloadForDate(date) {
   return {
-    foods: state.foods.filter(itemMatchesDiary),
-    workouts: state.workouts.filter(workoutMatchesDiary),
-    water: waterForDiary()
+    foods: state.foods.filter((food) => itemMatchesDate(food, date)),
+    workouts: state.workouts.filter((workout) => itemMatchesDate(workout, date)),
+    water: waterForDate(date)
   };
+}
+
+function diaryPayloadHasEntries(payload = {}) {
+  return Boolean((payload.foods || []).length || (payload.workouts || []).length || Number(payload.water));
 }
 
 function shouldSyncDiaryToSupabase() {
@@ -420,9 +436,7 @@ let isHydratingDiary = false;
 let diarySaveTimer = null;
 let caloriePercentDisplay = 0;
 let caloriePercentFrame = null;
-let quaggaLoader = null;
-let barcodeDetectedHandler = null;
-let isBarcodeScannerActive = false;
+let editingFoodIndex = null;
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -430,16 +444,13 @@ const runtimeConfig = {
 
 const elements = {
   foodSearch: document.querySelector("#foodSearch"),
+  foodSearchView: document.querySelector("#foodSearchView"),
+  foodDetailView: document.querySelector("#foodDetailView"),
   foodSearchStatus: document.querySelector("#foodSearchStatus"),
   foodResults: document.querySelector("#foodResults"),
   useCustomFood: document.querySelector("#useCustomFood"),
-  startBarcodeScan: document.querySelector("#startBarcodeScan"),
-  stopBarcodeScan: document.querySelector("#stopBarcodeScan"),
-  barcodeScannerPanel: document.querySelector("#barcodeScannerPanel"),
-  barcodeScannerViewport: document.querySelector("#barcodeScannerViewport"),
-  barcodeStatus: document.querySelector("#barcodeStatus"),
-  barcodeInput: document.querySelector("#barcodeInput"),
-  lookupBarcode: document.querySelector("#lookupBarcode"),
+  selectedFoodName: document.querySelector("#selectedFoodName"),
+  selectedFoodMacros: document.querySelector("#selectedFoodMacros"),
   customFoodFields: document.querySelector("#customFoodFields"),
   customFoodName: document.querySelector("#customFoodName"),
   customCalories: document.querySelector("#customCalories"),
@@ -455,6 +466,7 @@ const elements = {
   foodTabs: document.querySelectorAll("[data-food-tab]"),
   servingSize: document.querySelector("#servingSize"),
   mealSelect: document.querySelector("#mealSelect"),
+  foodSubmitButton: document.querySelector("#foodSubmitButton"),
   workoutForm: document.querySelector("#workoutForm"),
   workoutType: document.querySelector("#workoutType"),
   workoutMinutes: document.querySelector("#workoutMinutes"),
@@ -520,7 +532,6 @@ const elements = {
   workoutFrequency: document.querySelector("#workoutFrequency"),
   workoutType: document.querySelector("#workoutType"),
   defaultDiaryView: document.querySelector("#defaultDiaryView"),
-  barcodeAutoOpen: document.querySelector("#barcodeAutoOpen"),
   quickAddCalories: document.querySelector("#quickAddCalories"),
   showNetCalories: document.querySelector("#showNetCalories"),
   focusMode: document.querySelector("#focusMode"),
@@ -813,7 +824,6 @@ function defaultPreferences() {
     workoutFrequency: "3",
     workoutType: "mixed",
     defaultDiaryView: "both",
-    barcodeAutoOpen: false,
     quickAddCalories: true,
     showNetCalories: true,
     focusMode: "daily",
@@ -888,7 +898,6 @@ function collectSettingsPreferences() {
     workoutFrequency: elements.workoutFrequency?.value || "3",
     workoutType: elements.workoutType?.value || "mixed",
     defaultDiaryView: elements.defaultDiaryView?.value || "both",
-    barcodeAutoOpen: checkboxValue(elements.barcodeAutoOpen),
     quickAddCalories: checkboxValue(elements.quickAddCalories),
     showNetCalories: checkboxValue(elements.showNetCalories),
     focusMode: elements.focusMode?.value || "daily",
@@ -1035,7 +1044,6 @@ function renderAccountSettings() {
   if (elements.workoutFrequency) elements.workoutFrequency.value = preferences.workoutFrequency || "3";
   if (elements.workoutType) elements.workoutType.value = preferences.workoutType || "mixed";
   if (elements.defaultDiaryView) elements.defaultDiaryView.value = preferences.defaultDiaryView || "both";
-  if (elements.barcodeAutoOpen) elements.barcodeAutoOpen.checked = Boolean(preferences.barcodeAutoOpen);
   if (elements.quickAddCalories) elements.quickAddCalories.checked = Boolean(preferences.quickAddCalories);
   if (elements.showNetCalories) elements.showNetCalories.checked = Boolean(preferences.showNetCalories);
   if (elements.focusMode) elements.focusMode.value = preferences.focusMode || "daily";
@@ -1308,7 +1316,12 @@ async function loadSupabaseProfile(user) {
   if (profile?.theme === "dark" || profile?.theme === "light") {
     applyTheme(profile.theme);
   }
-  state.recentFoods = Array.isArray(profile?.recent_foods) ? profile.recent_foods : [];
+  const remoteRecentFoods = Array.isArray(profile?.recent_foods) ? profile.recent_foods : [];
+  if (remoteRecentFoods.length || !state.recentFoods.length) {
+    state.recentFoods = remoteRecentFoods;
+  } else {
+    saveRecentFoodsPreference();
+  }
   saveState();
 
   return {
@@ -1329,20 +1342,43 @@ async function loadSupabaseDiaryDay(date = state.diaryDate) {
   });
   const rows = await supabaseRequest(`/rest/v1/diary_days?${params.toString()}`);
   const diaryDay = Array.isArray(rows) ? rows[0] : null;
+  const localPayload = diaryPayloadForDate(date);
+
+  if (!diaryDay) {
+    if (diaryPayloadHasEntries(localPayload)) {
+      await saveSupabaseDiaryDay(date).catch((error) => {
+        console.warn("Diary cloud backfill failed", error);
+      });
+    }
+    return null;
+  }
+
+  const remotePayload = {
+    foods: diaryDay.foods || [],
+    workouts: diaryDay.workouts || [],
+    water: Number(diaryDay.water) || 0
+  };
+
+  if (!diaryPayloadHasEntries(remotePayload) && diaryPayloadHasEntries(localPayload)) {
+    await saveSupabaseDiaryDay(date).catch((error) => {
+      console.warn("Diary cloud backfill failed", error);
+    });
+    return diaryDay;
+  }
 
   isHydratingDiary = true;
-  mergeDiaryDay(date, diaryDay || { foods: [], workouts: [], water: 0 });
+  mergeDiaryDay(date, remotePayload);
   saveState();
   isHydratingDiary = false;
   return diaryDay;
 }
 
-async function saveSupabaseDiaryDay() {
+async function saveSupabaseDiaryDay(date = state.diaryDate) {
   if (!shouldSyncDiaryToSupabase() || isHydratingDiary) {
     return;
   }
 
-  const payload = currentDiaryPayload();
+  const payload = diaryPayloadForDate(date);
   await supabaseRequest("/rest/v1/diary_days?on_conflict=user_id,diary_date", {
     method: "POST",
     headers: {
@@ -1350,7 +1386,7 @@ async function saveSupabaseDiaryDay() {
     },
     body: JSON.stringify({
       user_id: currentSupabaseUser.id,
-      diary_date: state.diaryDate,
+      diary_date: date,
       foods: payload.foods,
       workouts: payload.workouts,
       water: payload.water
@@ -1698,204 +1734,6 @@ function localFoodMatches(query, source = "all") {
     .slice(0, 12);
 }
 
-function nutrientValue(nutriments, keys) {
-  for (const key of keys) {
-    const value = Number(nutriments?.[key]);
-    if (Number.isFinite(value)) {
-      return value;
-    }
-  }
-
-  return 0;
-}
-
-function foodFromOpenFoodFactsProduct(product, barcode) {
-  const nutriments = product?.nutriments || {};
-  const productName = product?.product_name || product?.product_name_en || product?.generic_name || `Barcode ${barcode}`;
-  const quantity = product?.serving_quantity || product?.serving_size || "100 g";
-  const brand = Array.isArray(product?.brands_tags)
-    ? product.brands_tags[0]
-    : product?.brands || "Open Food Facts";
-
-  return {
-    name: productName,
-    calories: nutrientValue(nutriments, ["energy-kcal_serving", "energy-kcal_100g", "energy-kcal"]),
-    protein: nutrientValue(nutriments, ["proteins_serving", "proteins_100g", "proteins"]),
-    carbs: nutrientValue(nutriments, ["carbohydrates_serving", "carbohydrates_100g", "carbohydrates"]),
-    fat: nutrientValue(nutriments, ["fat_serving", "fat_100g", "fat"]),
-    fiber: nutrientValue(nutriments, ["fiber_serving", "fiber_100g", "fiber"]),
-    calcium: nutrientValue(nutriments, ["calcium_serving", "calcium_100g", "calcium"]) * 1000,
-    iron: nutrientValue(nutriments, ["iron_serving", "iron_100g", "iron"]) * 1000,
-    vitaminC: nutrientValue(nutriments, ["vitamin-c_serving", "vitamin-c_100g", "vitamin-c"]) * 1000,
-    potassium: nutrientValue(nutriments, ["potassium_serving", "potassium_100g", "potassium"]) * 1000,
-    source: `${brand}, ${quantity}`
-  };
-}
-
-function renderSingleBarcodeResult(food) {
-  selectedFood = food;
-  isCustomFoodMode = false;
-  activeFoodTab = "all";
-  elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
-  elements.foodForm.classList.remove("is-custom-mode");
-  elements.customFoodFields.hidden = true;
-  elements.foodResults.hidden = false;
-  elements.useCustomFood.textContent = "Add custom food";
-  elements.foodSearch.value = food.name;
-  elements.foodSearchStatus.textContent = "Barcode match found. Tap + to log it.";
-  renderFoodResults([food]);
-}
-
-async function lookupBarcode(barcode) {
-  const cleanBarcode = String(barcode || "").replace(/\D/g, "");
-
-  if (!cleanBarcode) {
-    if (elements.barcodeStatus) {
-      elements.barcodeStatus.textContent = "Enter or scan a barcode first.";
-    }
-    return;
-  }
-
-  if (elements.barcodeStatus) {
-    elements.barcodeStatus.textContent = `Looking up ${cleanBarcode}...`;
-  }
-  if (elements.foodSearchStatus) {
-    elements.foodSearchStatus.textContent = `Looking up barcode ${cleanBarcode}...`;
-  }
-
-  try {
-    const fields = "product_name,product_name_en,generic_name,brands,brands_tags,serving_quantity,serving_size,nutriments";
-    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json?fields=${encodeURIComponent(fields)}`);
-    const data = await response.json();
-
-    if (!response.ok || data.status === 0 || !data.product) {
-      throw new Error("No product found for that barcode. Add it as a custom food instead.");
-    }
-
-    const food = foodFromOpenFoodFactsProduct(data.product, cleanBarcode);
-    renderSingleBarcodeResult(food);
-    stopBarcodeScanner();
-  } catch (error) {
-    if (elements.foodSearchStatus) {
-      elements.foodSearchStatus.textContent = error.message;
-    }
-    if (elements.barcodeStatus) {
-      elements.barcodeStatus.textContent = error.message;
-    }
-  }
-}
-
-function loadQuagga() {
-  if (window.Quagga) {
-    return Promise.resolve(window.Quagga);
-  }
-
-  if (!quaggaLoader) {
-    quaggaLoader = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/@ericblade/quagga2/dist/quagga.min.js";
-      script.async = true;
-      script.onload = () => resolve(window.Quagga);
-      script.onerror = () => reject(new Error("Barcode scanner could not load. Enter the barcode manually."));
-      document.head.appendChild(script);
-    });
-  }
-
-  return quaggaLoader;
-}
-
-function stopBarcodeScanner() {
-  if (!isBarcodeScannerActive || !window.Quagga) {
-    if (elements.barcodeScannerPanel) {
-      elements.barcodeScannerPanel.hidden = true;
-    }
-    return;
-  }
-
-  if (barcodeDetectedHandler) {
-    window.Quagga.offDetected(barcodeDetectedHandler);
-    barcodeDetectedHandler = null;
-  }
-
-  window.Quagga.stop();
-  isBarcodeScannerActive = false;
-
-  if (elements.barcodeScannerPanel) {
-    elements.barcodeScannerPanel.hidden = true;
-  }
-}
-
-async function startBarcodeScanner() {
-  if (!elements.barcodeScannerPanel || !elements.barcodeScannerViewport) {
-    return;
-  }
-
-  elements.barcodeScannerPanel.hidden = false;
-  elements.barcodeScannerViewport.innerHTML = "";
-  elements.barcodeStatus.textContent = "Loading camera scanner...";
-
-  try {
-    const Quagga = await loadQuagga();
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera access is not available here. Enter the barcode manually.");
-    }
-
-    stopBarcodeScanner();
-    elements.barcodeScannerPanel.hidden = false;
-    elements.barcodeStatus.textContent = "Allow camera access, then center the barcode in the frame.";
-
-    await new Promise((resolve, reject) => {
-      Quagga.init(
-        {
-          inputStream: {
-            type: "LiveStream",
-            target: elements.barcodeScannerViewport,
-            constraints: {
-              facingMode: "environment",
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          },
-          locator: {
-            patchSize: "medium",
-            halfSample: true
-          },
-          decoder: {
-            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
-          },
-          locate: true
-        },
-        (error) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-          resolve();
-        }
-      );
-    });
-
-    barcodeDetectedHandler = (result) => {
-      const code = result?.codeResult?.code || "";
-      if (!code) {
-        return;
-      }
-      elements.barcodeInput.value = code;
-      elements.barcodeStatus.textContent = `Barcode ${code} detected.`;
-      stopBarcodeScanner();
-      lookupBarcode(code);
-    };
-
-    Quagga.onDetected(barcodeDetectedHandler);
-    Quagga.start();
-    isBarcodeScannerActive = true;
-  } catch (error) {
-    isBarcodeScannerActive = false;
-    elements.barcodeStatus.textContent = error.message || "Barcode scanner unavailable. Enter the barcode manually.";
-  }
-}
-
 function foodForHistory(food) {
   return {
     name: food.name,
@@ -1926,10 +1764,43 @@ function logFoodToMeal(food, servings = 1) {
     loggedFood[key] = typeof food[key] === "number" ? food[key] * safeServings : food[key];
   });
 
-  state.foods.unshift(loggedFood);
+  if (editingFoodIndex !== null) {
+    state.foods[editingFoodIndex] = loggedFood;
+    editingFoodIndex = null;
+  } else {
+    state.foods.unshift(loggedFood);
+  }
+
   addRecentFood(food);
   render();
   setFoodDialogOpen(false);
+}
+
+function foodPerServing(loggedFood) {
+  const servings = Math.max(Number(loggedFood.servings) || 1, 0.25);
+  const food = { ...loggedFood };
+
+  Object.keys(food).forEach((key) => {
+    if (typeof food[key] === "number" && key !== "servings") {
+      food[key] = food[key] / servings;
+    }
+  });
+
+  delete food.meal;
+  delete food.servings;
+  delete food.date;
+  return food;
+}
+
+function scaleFood(food, servings) {
+  const safeServings = Math.max(Number(servings) || 1, 0.25);
+  const scaledFood = {};
+
+  Object.keys(food || {}).forEach((key) => {
+    scaledFood[key] = typeof food[key] === "number" ? food[key] * safeServings : food[key];
+  });
+
+  return scaledFood;
 }
 
 function totalsFromFood() {
@@ -1971,12 +1842,18 @@ function renderFoodResults(results) {
   }
 
   if (results.length === 0) {
+    selectedFood = null;
     elements.foodResults.innerHTML = activeFoodTab === "history"
       ? '<div class="empty-state">No recent foods yet. Logged foods will appear here.</div>'
       : '<div class="empty-state">No foods found. Add a custom food instead.</div>';
+    elements.foodResults.dataset.results = "[]";
+    if (!isCustomFoodMode) {
+      elements.foodSubmitButton.disabled = true;
+    }
     return;
   }
 
+  elements.foodSubmitButton.disabled = false;
   elements.foodResults.innerHTML = results
     .map((food, index) => {
       const selectedClass = !isCustomFoodMode && selectedFood?.name === food.name ? " is-selected" : "";
@@ -1986,13 +1863,73 @@ function renderFoodResults(results) {
             <strong>${escapeHtml(food.name)}</strong>
             <span>${formatNumber(food.calories)} kcal - ${formatNumber(food.protein)}g protein - ${formatNumber(food.carbs)}g carbs - ${formatNumber(food.fat)}g fat</span>
           </div>
-          <span class="food-add-circle" aria-hidden="true">+</span>
+          <span class="food-add-circle" aria-hidden="true">${selectedClass ? "✓" : "›"}</span>
         </button>
       `;
     })
     .join("");
 
   elements.foodResults.dataset.results = JSON.stringify(results);
+}
+
+function renderSelectedFoodDetail() {
+  if (!elements.selectedFoodName || !elements.selectedFoodMacros || !selectedFood) {
+    return;
+  }
+
+  const servings = Math.max(Number(elements.servingSize.value) || 1, 0.25);
+  const scaledFood = scaleFood(selectedFood, servings);
+  const calories = Math.max(Number(scaledFood.calories) || 0, 0);
+  const protein = Math.max(Number(scaledFood.protein) || 0, 0);
+  const carbs = Math.max(Number(scaledFood.carbs) || 0, 0);
+  const fat = Math.max(Number(scaledFood.fat) || 0, 0);
+  const calorieGoal = getCalorieGoal() || 0;
+  const macroGoals = getMacroGoals();
+  const caloriePercent = calorieGoal ? Math.round((calories / calorieGoal) * 100) : 0;
+  const carbPercent = macroGoals.carbs ? Math.round((carbs / macroGoals.carbs) * 100) : 0;
+  const fatPercent = macroGoals.fat ? Math.round((fat / macroGoals.fat) * 100) : 0;
+  const proteinPercent = macroGoals.protein ? Math.round((protein / macroGoals.protein) * 100) : 0;
+  elements.selectedFoodName.textContent = selectedFood.name || "Food";
+  elements.selectedFoodMacros.innerHTML = `
+    <div class="selected-calorie-card"><span>${caloriePercent}%</span><strong>${formatNumber(calories)} kcal</strong><small>Calories</small></div>
+    <div><span>${carbPercent}%</span><strong>${formatNumber(carbs)}g</strong><small>Carbs</small></div>
+    <div><span>${fatPercent}%</span><strong>${formatNumber(fat)}g</strong><small>Fat</small></div>
+    <div><span>${proteinPercent}%</span><strong>${formatNumber(protein)}g</strong><small>Protein</small></div>
+  `;
+}
+
+function setFoodDetailView(isDetail) {
+  elements.foodSearchView.hidden = isDetail;
+  elements.foodDetailView.hidden = !isDetail;
+  elements.useCustomFood.hidden = isDetail && !isCustomFoodMode;
+  elements.foodSubmitButton.hidden = !isDetail && !isCustomFoodMode;
+
+  if (isDetail) {
+    renderSelectedFoodDetail();
+  }
+}
+
+function resetFoodDetailView() {
+  elements.foodSearchView.hidden = false;
+  elements.foodDetailView.hidden = true;
+  elements.useCustomFood.hidden = false;
+  elements.foodSubmitButton.hidden = true;
+}
+
+function selectFoodResult(food) {
+  selectedFood = food;
+  isCustomFoodMode = false;
+  elements.foodForm.classList.remove("is-custom-mode");
+  elements.customFoodFields.hidden = true;
+  elements.useCustomFood.textContent = "Add custom food";
+  elements.foodSubmitButton.textContent = editingFoodIndex === null ? "Log selected food" : "Save food";
+  elements.foodSubmitButton.disabled = false;
+  elements.foodSubmitButton.hidden = false;
+  elements.foodSearchStatus.textContent = `${food.name} selected.`;
+  setFoodDetailView(true);
+
+  const results = JSON.parse(elements.foodResults.dataset.results || "[]");
+  renderFoodResults(results.length ? results : [food]);
 }
 
 function renderFoodSearch() {
@@ -2005,7 +1942,7 @@ function renderFoodSearch() {
 
   if (query.length < 2) {
     const starterFoods = localFoodMatches("", source);
-    selectedFood = starterFoods[0] || foods[0];
+    selectedFood = null;
     elements.foodSearchStatus.textContent = activeFoodTab === "history" ? "History" : "All foods";
     renderFoodResults(starterFoods);
     return;
@@ -2014,7 +1951,7 @@ function renderFoodSearch() {
   latestFoodSearchToken++;
   const localResults = localFoodMatches(query, source);
 
-  selectedFood = localResults[0] || selectedFood;
+  selectedFood = null;
   elements.foodSearchStatus.textContent = localResults.length ? "Showing local matches." : "No local matches. Add a custom food instead.";
   renderFoodResults(localResults);
 }
@@ -2055,12 +1992,14 @@ function renderMealSections() {
         : items
             .map(
               (item) => `
-          <div class="meal-food-row">
-            <div>
+          <div class="meal-food-row" data-food-edit="${item.globalIndex}">
+            <button class="meal-food-main" type="button" aria-label="Edit serving for ${escapeHtml(item.name)}">
               <strong>${escapeHtml(item.name)}</strong>
               <span>${item.servings} serving · ${formatNumber(item.calories)} kcal</span>
+            </button>
+            <div class="meal-row-actions">
+              <button class="delete-button" type="button" data-food-index="${item.globalIndex}" aria-label="Remove ${escapeHtml(item.name)}">&times;</button>
             </div>
-            <button class="delete-button" type="button" data-food-index="${item.globalIndex}" aria-label="Remove ${escapeHtml(item.name)}">&times;</button>
           </div>`
             )
             .join("");
@@ -2258,12 +2197,21 @@ function setCustomFoodMode(isCustom, shouldFocus = true) {
   elements.foodForm.classList.toggle("is-custom-mode", isCustom);
   elements.customFoodFields.hidden = !isCustom;
   elements.useCustomFood.textContent = isCustom ? "Use starter foods" : "Add custom food";
+  elements.foodSubmitButton.textContent = editingFoodIndex === null
+    ? isCustom ? "Log custom food" : "Log selected food"
+    : "Save food";
+  elements.foodSubmitButton.disabled = false;
+  elements.foodSubmitButton.hidden = false;
 
   if (isCustom) {
     elements.foodSearchStatus.textContent = "Enter the nutrition details for your custom food.";
-    elements.foodResults.hidden = true;
+    elements.foodSearchView.hidden = true;
+    elements.foodDetailView.hidden = false;
+    elements.useCustomFood.hidden = false;
+    selectedFood = customFoodFromForm();
+    renderSelectedFoodDetail();
   } else {
-    elements.foodResults.hidden = false;
+    resetFoodDetailView();
     renderFoodSearch();
   }
 
@@ -2283,17 +2231,82 @@ function setFoodDialogOpen(isOpen) {
   document.body.classList.toggle("dialog-open", isOpen);
 
   if (isOpen) {
-    elements.foodSearch.value = "";
-    activeFoodTab = "all";
-    elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
-    latestFoodSearchToken++;
-    setCustomFoodMode(false, false);
+    if (editingFoodIndex === null) {
+      elements.foodSearch.value = "";
+      elements.servingSize.value = "1";
+      elements.mealSelect.disabled = false;
+      activeFoodTab = "all";
+      elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
+      latestFoodSearchToken++;
+      resetCustomFoodFields();
+      resetFoodDetailView();
+      setCustomFoodMode(false, false);
+    }
   } else {
-    stopBarcodeScanner();
+    editingFoodIndex = null;
+    isCustomFoodMode = false;
+    selectedFood = null;
+    elements.foodForm.classList.remove("is-custom-mode", "is-serving-edit");
+    elements.mealSelect.disabled = false;
+    elements.useCustomFood.hidden = false;
+    elements.useCustomFood.textContent = "Add custom food";
+    elements.foodSubmitButton.textContent = "Log selected food";
+    elements.foodSubmitButton.hidden = true;
     if (elements.dashboardDateButton) {
-    elements.dashboardDateButton.focus();
+      elements.dashboardDateButton.focus();
     }
   }
+}
+
+function resetCustomFoodFields() {
+  elements.customFoodName.value = "";
+  elements.customCalories.value = "0";
+  elements.customProtein.value = "0";
+  elements.customCarbs.value = "0";
+  elements.customFat.value = "0";
+  elements.customFiber.value = "0";
+  elements.customCalcium.value = "0";
+  elements.customIron.value = "0";
+  elements.customVitaminC.value = "0";
+  elements.customPotassium.value = "0";
+}
+
+function populateCustomFoodFields(food) {
+  elements.customFoodName.value = food.name || "";
+  elements.customCalories.value = Number(food.calories) || 0;
+  elements.customProtein.value = Number(food.protein) || 0;
+  elements.customCarbs.value = Number(food.carbs) || 0;
+  elements.customFat.value = Number(food.fat) || 0;
+  elements.customFiber.value = Number(food.fiber) || 0;
+  elements.customCalcium.value = Number(food.calcium) || 0;
+  elements.customIron.value = Number(food.iron) || 0;
+  elements.customVitaminC.value = Number(food.vitaminC) || 0;
+  elements.customPotassium.value = Number(food.potassium) || 0;
+}
+
+function editLoggedFood(index) {
+  const loggedFood = state.foods[Number(index)];
+
+  if (!loggedFood) {
+    return;
+  }
+
+  editingFoodIndex = Number(index);
+  selectedFood = foodPerServing(loggedFood);
+  isCustomFoodMode = false;
+  elements.mealSelect.value = loggedFood.meal || "Breakfast";
+  elements.mealSelect.disabled = false;
+  elements.servingSize.value = loggedFood.servings || 1;
+  elements.foodSearch.value = loggedFood.name || "";
+  setFoodDialogOpen(true);
+  elements.foodForm.classList.remove("is-custom-mode");
+  elements.foodForm.classList.add("is-serving-edit");
+  elements.customFoodFields.hidden = true;
+  elements.useCustomFood.hidden = true;
+  elements.foodSubmitButton.hidden = false;
+  setFoodDetailView(true);
+  elements.foodSearchStatus.textContent = "Editing serving size.";
+  elements.foodSubmitButton.textContent = "Save food";
 }
 
 function customFoodFromForm() {
@@ -2315,21 +2328,31 @@ if (elements.foodForm) {
   elements.foodForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
+  if (!food) {
+    elements.foodSearchStatus.textContent = "Select a food or add a custom food first.";
+    return;
+  }
   const servings = Math.max(Number(elements.servingSize.value), 0.25);
   const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
   logFoodToMeal(foodToLog, servings);
   elements.servingSize.value = "1";
-  elements.customFoodName.value = "";
-  elements.customCalories.value = "0";
-  elements.customProtein.value = "0";
-  elements.customCarbs.value = "0";
-  elements.customFat.value = "0";
-  elements.customFiber.value = "0";
-  elements.customCalcium.value = "0";
-  elements.customIron.value = "0";
-  elements.customVitaminC.value = "0";
-  elements.customPotassium.value = "0";
+  resetCustomFoodFields();
 });
+}
+
+if (elements.servingSize) {
+  elements.servingSize.addEventListener("input", renderSelectedFoodDetail);
+}
+
+if (elements.customFoodFields) {
+  elements.customFoodFields.addEventListener("input", () => {
+    if (!isCustomFoodMode) {
+      return;
+    }
+
+    selectedFood = customFoodFromForm();
+    renderSelectedFoodDetail();
+  });
 }
 
 if (elements.workoutForm) {
@@ -2394,34 +2417,13 @@ if (elements.foodResults) {
 
     const results = JSON.parse(elements.foodResults.dataset.results || "[]");
     selectedFood = results[Number(resultButton.dataset.foodResult)] || selectedFood;
-    logFoodToMeal(selectedFood, 1);
+    selectFoodResult(selectedFood);
   });
 }
 
 if (elements.useCustomFood) {
   elements.useCustomFood.addEventListener("click", () => {
     setCustomFoodMode(!isCustomFoodMode);
-  });
-}
-
-if (elements.startBarcodeScan) {
-  elements.startBarcodeScan.addEventListener("click", startBarcodeScanner);
-}
-
-if (elements.stopBarcodeScan) {
-  elements.stopBarcodeScan.addEventListener("click", stopBarcodeScanner);
-}
-
-if (elements.lookupBarcode) {
-  elements.lookupBarcode.addEventListener("click", () => lookupBarcode(elements.barcodeInput.value));
-}
-
-if (elements.barcodeInput) {
-  elements.barcodeInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      lookupBarcode(elements.barcodeInput.value);
-    }
   });
 }
 
@@ -2548,17 +2550,24 @@ if (elements.mealSections) {
 }
 
 document.addEventListener("click", (event) => {
-  const foodIndex = event.target.dataset.foodIndex;
-  const workoutIndex = event.target.dataset.workoutIndex;
+  const foodEditButton = event.target.closest("[data-food-edit]");
+  const foodDeleteButton = event.target.closest("[data-food-index]");
+  const workoutDeleteButton = event.target.closest("[data-workout-index]");
 
-  if (foodIndex !== undefined) {
-    state.foods.splice(Number(foodIndex), 1);
+  if (foodDeleteButton) {
+    state.foods.splice(Number(foodDeleteButton.dataset.foodIndex), 1);
     render();
+    return;
   }
 
-  if (workoutIndex !== undefined) {
-    state.workouts.splice(Number(workoutIndex), 1);
+  if (workoutDeleteButton) {
+    state.workouts.splice(Number(workoutDeleteButton.dataset.workoutIndex), 1);
     render();
+    return;
+  }
+
+  if (foodEditButton) {
+    editLoggedFood(foodEditButton.dataset.foodEdit);
   }
 });
 
