@@ -1,0 +1,25 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>MacroDock Logo</title>
+  <desc>A minimal hub logo with one central node connected to three outer nodes.</desc>
+
+  <!-- App icon background -->
+  <rect width="1024" height="1024" rx="220" fill="#17211B"/>
+
+  <!-- Subtle connector lines -->
+  <g stroke="#2E3C33" stroke-width="28" stroke-linecap="round">
+    <line x1="512" y1="512" x2="512" y2="235"/>
+    <line x1="512" y1="512" x2="282" y2="755"/>
+    <line x1="512" y1="512" x2="742" y2="755"/>
+  </g>
+
+  <!-- Outer macro nodes -->
+  <circle cx="512" cy="235" r="58" fill="#A5E6BA"/>
+  <circle cx="282" cy="755" r="58" fill="#A5E6BA"/>
+  <circle cx="742" cy="755" r="58" fill="#A5E6BA"/>
+
+  <!-- Center hub node -->
+  <circle cx="512" cy="512" r="122" fill="#79D89B"/>
+
+  <!-- Inner highlight for depth while staying flat/minimal -->
+  <circle cx="512" cy="512" r="72" fill="#17211B" fill-opacity="0.16"/>
+</svg>
