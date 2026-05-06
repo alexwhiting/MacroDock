@@ -71,14 +71,27 @@
 
           <div class="two-column">
             <label>
-              Goal weight (kg)
-              <input id="goalWeight" type="number" min="35" max="250" step="0.1" placeholder="Goal weight" />
+              Goal
+              <select id="currentGoal">
+                <option value="lose">Lose weight</option>
+                <option value="maintain">Maintain weight</option>
+                <option value="gain">Gain weight</option>
+              </select>
             </label>
             <label>
-              Goal date
-              <input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" />
+              Weekly rate
+              <select id="weeklyRate">
+                <option value="0">0 lb / week</option>
+                <option value="0.5">0.5 lb / week</option>
+                <option value="1">1 lb / week</option>
+                <option value="1.5">1.5 lb / week</option>
+                <option value="2">2 lb / week</option>
+              </select>
             </label>
           </div>
+
+          <input id="goalWeight" type="hidden" />
+          <input id="goalDate" type="hidden" />
 
           <button class="primary-button" type="submit">Start using MacroDock</button>
           <div id="accountSummary" class="account-summary" aria-live="polite">

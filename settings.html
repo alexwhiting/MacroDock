@@ -132,9 +132,9 @@
               <div id="goalFields" class="settings-section-body" hidden>
                 <div class="two-column">
                   <label>Current goal<select id="currentGoal"><option value="lose">Lose</option><option value="maintain">Maintain</option><option value="gain">Gain</option></select></label>
-                  <label>Weekly rate<select id="weeklyRate"><option value="0.5">0.5 lb</option><option value="1">1 lb</option><option value="1.5">1.5 lb</option><option value="2">2 lb</option></select></label>
+                  <label>Weekly rate<select id="weeklyRate"><option value="0">0 lb</option><option value="0.5">0.5 lb</option><option value="1">1 lb</option><option value="1.5">1.5 lb</option><option value="2">2 lb</option></select></label>
                   <label>Target weight (kg)<input id="goalWeight" type="number" min="35" max="250" step="0.1" placeholder="Goal weight" /></label>
-                  <label>Goal date<input id="goalDate" type="text" inputmode="numeric" autocomplete="off" placeholder="YYYY-MM-DD" /></label>
+                  <input id="goalDate" type="hidden" />
                   <label>Activity level<select id="accountActivity"><option value="1.2">Sedentary</option><option value="1.375">Light</option><option value="1.55">Moderate</option><option value="1.725">Active</option><option value="1.9">Very active</option></select></label>
                   <label>Calorie target<select id="calorieMode"><option value="auto">Auto calculated</option><option value="manual">Manual</option></select></label>
                 </div>

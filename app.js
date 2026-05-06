@@ -243,14 +243,29 @@ const foods = [
   }
 ];
 
-const state = JSON.parse(localStorage.getItem("macrodock-state")) || {
-  foods: [],
-  workouts: [],
-  water: 0,
-  waterByDate: {},
-  recentFoods: [],
-  diaryDate: null
-};
+const defaultStateStorageKey = "macrodock-state";
+
+function defaultDiaryState() {
+  return {
+    foods: [],
+    workouts: [],
+    water: 0,
+    waterByDate: {},
+    recentFoods: [],
+    diaryDate: null
+  };
+}
+
+function readStoredState(storageKey) {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey)) || defaultDiaryState();
+  } catch {
+    return defaultDiaryState();
+  }
+}
+
+let activeStateStorageKey = defaultStateStorageKey;
+const state = readStoredState(activeStateStorageKey);
 
 const supabaseProfileColumns = {
   theme: true,
@@ -287,6 +302,39 @@ function normalizeDiaryState() {
       w.date = today;
     }
   });
+}
+
+function replaceDiaryState(nextState = defaultDiaryState()) {
+  Object.keys(state).forEach((key) => {
+    delete state[key];
+  });
+  Object.assign(state, defaultDiaryState(), nextState);
+  normalizeDiaryState();
+}
+
+function stateStorageKeyForUser(user) {
+  if (user?.id) {
+    return `macrodock-state:${user.id}`;
+  }
+
+  if (user?.email) {
+    return `macrodock-state:${user.email.toLowerCase()}`;
+  }
+
+  return defaultStateStorageKey;
+}
+
+function useStateStorageForUser(user) {
+  useStateStorageKey(stateStorageKeyForUser(user));
+}
+
+function useStateStorageKey(nextStorageKey) {
+  if (activeStateStorageKey === nextStorageKey) {
+    return;
+  }
+
+  activeStateStorageKey = nextStorageKey;
+  replaceDiaryState(readStoredState(activeStateStorageKey));
 }
 
 function itemMatchesDiary(item) {
@@ -719,7 +767,7 @@ function saveRecentFoodsPreference() {
 }
 
 function saveState() {
-  localStorage.setItem("macrodock-state", JSON.stringify(state));
+  localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
   queueDiaryCloudSave();
 }
 
@@ -740,23 +788,17 @@ function calculateAccountTargets(account) {
   const heightCm = Math.max(Number(account.heightCm) || 0, 0);
   const age = Math.max(Number(account.age) || 0, 0);
   const activityFactor = Math.max(Number(account.activityFactor) || 1.2, 1.2);
-  const targetWeightKg = Math.max(Number(account.targetWeightKg) || weightKg, 0);
   const preferences = accountPreferences(account);
   const sexConstant = account.sex === "female" ? -161 : 5;
   const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + sexConstant;
   const tdee = bmr * activityFactor;
-  const today = new Date();
-  const targetDate = account.targetDate ? new Date(`${account.targetDate}T00:00:00`) : null;
-  const daysToGoal = targetDate ? Math.max(Math.ceil((targetDate - today) / 86400000), 1) : 0;
-  const weightDeltaKg = targetWeightKg - weightKg;
-  const weeklyRateAdjustment = (Number(preferences.weeklyRate) || 0) * 500;
+  const weeklyRateAdjustment = preferences.currentGoal === "maintain" ? 0 : (Number(preferences.weeklyRate) || 0) * 500;
   const goalAdjustment = preferences.currentGoal === "lose"
     ? -weeklyRateAdjustment
     : preferences.currentGoal === "gain"
       ? weeklyRateAdjustment
       : 0;
-  const targetDateAdjustment = daysToGoal > 0 ? (weightDeltaKg * 7700) / daysToGoal : 0;
-  const dailyGoalAdjustment = preferences.currentGoal === "maintain" ? 0 : goalAdjustment || targetDateAdjustment;
+  const dailyGoalAdjustment = preferences.currentGoal === "maintain" ? 0 : goalAdjustment;
   const autoCalorieTarget = Math.max(Math.round(tdee + dailyGoalAdjustment), 1000);
   const calorieTarget = preferences.calorieMode === "manual" && Number(preferences.calorieTarget)
     ? Math.max(Math.round(Number(preferences.calorieTarget)), 1000)
@@ -767,8 +809,8 @@ function calculateAccountTargets(account) {
     tdee: Math.round(tdee),
     calorieTarget,
     dailyGoalAdjustment: Math.round(dailyGoalAdjustment),
-    daysToGoal,
-    weightDeltaKg
+    daysToGoal: 0,
+    weightDeltaKg: preferences.currentGoal === "lose" ? -1 : preferences.currentGoal === "gain" ? 1 : 0
   };
 }
 
@@ -875,13 +917,14 @@ function checkboxValue(element) {
 
 function collectSettingsPreferences() {
   const previous = accountPreferences();
+  const currentGoal = elements.currentGoal?.value || "maintain";
 
   return {
     ...previous,
     username: elements.accountUsername?.value.trim() || "",
     units: elements.accountUnits?.value || "metric",
-    currentGoal: elements.currentGoal?.value || "maintain",
-    weeklyRate: elements.weeklyRate?.value || "1",
+    currentGoal,
+    weeklyRate: currentGoal === "maintain" ? "0" : elements.weeklyRate?.value || "1",
     calorieMode: elements.calorieMode?.value || "auto",
     calorieTarget: Number(elements.calorieTargetInput?.value) || "",
     macroMode: elements.macroMode?.value || "auto",
@@ -928,7 +971,7 @@ function saveAccountFromForm(event) {
     weightKg: Number(elements.accountWeight.value),
     activityFactor: Number(elements.accountActivity.value),
     targetWeightKg: Number(elements.goalWeight.value) || Number(elements.accountWeight.value),
-    targetDate: elements.goalDate.value,
+    targetDate: "",
     preferences: collectSettingsPreferences()
   };
   const targets = calculateAccountTargets(accountInput);
@@ -943,7 +986,6 @@ function saveAccountFromForm(event) {
     if (user) {
       renderAuthState(user);
     }
-    sessionStorage.removeItem("macrodock-needs-metrics");
     if (isOnboardingPage()) {
       window.location.href = "./index.html";
     }
@@ -999,7 +1041,7 @@ function saveAccountFromForm(event) {
 }
 
 function redirectAuthenticatedUserWithoutAccount(account) {
-  if (!isProtectedPage() || isAuthPage() || isOnboardingPage() || account || !getAuthToken()) {
+  if (!isProtectedPage() || isAuthPage() || isOnboardingPage() || account || storedAccount() || !getAuthToken()) {
     return false;
   }
 
@@ -1054,6 +1096,7 @@ function renderAccountSettings() {
   if (elements.streakNotifications) elements.streakNotifications.checked = Boolean(preferences.streakNotifications);
   if (elements.accentColor) elements.accentColor.value = preferences.accentColor || "green";
   if (elements.dashboardLayout) elements.dashboardLayout.value = preferences.dashboardLayout || "balanced";
+  syncWeeklyRateControl();
 
   if (account) {
     elements.accountName.value = account.name || "";
@@ -1081,7 +1124,6 @@ function renderAccountSettings() {
       </div>
       <p>${goalDescription(account)}. Daily adjustment: ${account.dailyGoalAdjustment >= 0 ? "+" : ""}${formatNumber(account.dailyGoalAdjustment)} kcal.</p>
     `;
-    sessionStorage.removeItem("macrodock-needs-metrics");
     return;
   }
 
@@ -1094,6 +1136,21 @@ function renderAccountSettings() {
   elements.goalWeight.value = "";
   elements.goalDate.value = "";
   elements.accountSummary.textContent = "Add your metrics to calculate your daily calorie target.";
+}
+
+function syncWeeklyRateControl() {
+  if (!elements.currentGoal || !elements.weeklyRate) {
+    return;
+  }
+
+  const isMaintaining = elements.currentGoal.value === "maintain";
+  if (isMaintaining) {
+    elements.weeklyRate.value = "0";
+  } else if (elements.weeklyRate.value === "0") {
+    elements.weeklyRate.value = "1";
+  }
+
+  elements.weeklyRate.disabled = isMaintaining;
 }
 
 function escapeHtml(value) {
@@ -1130,6 +1187,23 @@ function setAuthSession(token, provider) {
   setAuthToken(token);
   if (token) {
     localStorage.setItem("macrodock-auth-provider", provider);
+  }
+}
+
+function setAuthStateOwner(user) {
+  const storageKey = stateStorageKeyForUser(user);
+  localStorage.setItem("macrodock-auth-state-key", storageKey);
+  useStateStorageKey(storageKey);
+}
+
+function restoreAuthStateOwner() {
+  if (!getAuthToken()) {
+    return;
+  }
+
+  const storageKey = localStorage.getItem("macrodock-auth-state-key");
+  if (storageKey) {
+    useStateStorageKey(storageKey);
   }
 }
 
@@ -1187,7 +1261,6 @@ function redirectAfterAuth() {
 }
 
 function redirectToMetricsSetup() {
-  sessionStorage.setItem("macrodock-needs-metrics", "true");
   sessionStorage.removeItem("macrodock-post-auth");
   window.location.href = "./onboarding.html";
 }
@@ -1285,6 +1358,7 @@ function supabasePublicUser(user, account = null) {
 }
 
 async function loadSupabaseProfile(user) {
+  setAuthStateOwner(user);
   currentSupabaseUser = user;
   if (user?.email) {
     localStorage.setItem("macrodock-user-email", user.email);
@@ -1442,6 +1516,7 @@ async function loadRemoteAccount() {
     }
 
     const data = await apiRequest("/api/account");
+    setAuthStateOwner(data.user);
 
     if (data.account) {
       localStorage.setItem("macrodock-account", JSON.stringify(data.account));
@@ -1535,7 +1610,6 @@ async function authenticate(mode) {
         return;
       }
       localStorage.removeItem("macrodock-account");
-      sessionStorage.setItem("macrodock-needs-metrics", "true");
     }
 
     if (supabaseEnabled()) {
@@ -1549,7 +1623,6 @@ async function authenticate(mode) {
       });
 
       if (!data.access_token) {
-        sessionStorage.setItem("macrodock-needs-metrics", "true");
         elements.authPanel.textContent = "Account created. Check your email to confirm it, then log in and complete your metrics.";
         setAuthMode("login");
         return;
@@ -1567,12 +1640,12 @@ async function authenticate(mode) {
 
       renderAuthState(profileData.user);
 
-      if (isAuthPage() && !profileData.account && sessionStorage.getItem("macrodock-needs-metrics") === "true") {
+      if (isAuthPage() && mode === "register") {
         redirectToMetricsSetup();
         return;
       }
 
-      if (isAuthPage() && mode === "register") {
+      if (isAuthPage() && !profileData.account) {
         redirectToMetricsSetup();
         return;
       }
@@ -1590,6 +1663,7 @@ async function authenticate(mode) {
     });
 
     setAuthSession(data.token, "local");
+    setAuthStateOwner(data.user);
     elements.authPassword.value = "";
     renderAuthState(data.user);
 
@@ -1601,12 +1675,12 @@ async function authenticate(mode) {
       localStorage.removeItem("macrodock-account");
     }
 
-    if (isAuthPage() && !data.user?.account && sessionStorage.getItem("macrodock-needs-metrics") === "true") {
+    if (isAuthPage() && mode === "register") {
       redirectToMetricsSetup();
       return;
     }
 
-    if (isAuthPage() && mode === "register") {
+    if (isAuthPage() && !data.user?.account) {
       redirectToMetricsSetup();
       return;
     }
@@ -1632,6 +1706,12 @@ async function logout() {
 
   setAuthToken("");
   currentSupabaseUser = null;
+  useStateStorageForUser(null);
+  replaceDiaryState(defaultDiaryState());
+  localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
+  localStorage.removeItem("macrodock-account");
+  localStorage.removeItem("macrodock-user-email");
+  localStorage.removeItem("macrodock-auth-state-key");
   renderAuthState();
   redirectToAuth();
 }
@@ -2495,6 +2575,10 @@ if (elements.settingsLogoutButton) {
   elements.settingsLogoutButton.addEventListener("click", logout);
 }
 
+if (elements.currentGoal) {
+  elements.currentGoal.addEventListener("change", syncWeeklyRateControl);
+}
+
 document.querySelectorAll("[data-settings-toggle]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const targetId = toggle.getAttribute("data-settings-toggle");
@@ -2665,6 +2749,7 @@ function watchDateRollover() {
 }
 
 function renderCurrentPageFromCache() {
+  restoreAuthStateOwner();
   applyStoredPreferences();
   renderAccountSettings();
   renderTargetSummary();
