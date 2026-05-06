@@ -13,21 +13,21 @@
       document.documentElement.dataset.theme = localStorage.getItem("macrodock-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     </script>
     <link rel="manifest" href="./site.webmanifest" />
-    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="icon" href="./macrodock-logo.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./macrodock-logo.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="page-auth is-loading">
     <main class="auth-screen">
       <section class="auth-splash" aria-live="polite">
-        <div class="auth-mark">M</div>
+        <div class="auth-mark"><img src="./macrodock-logo.svg" alt="" /></div>
         <strong>MacroDock</strong>
         <span>Loading your diary...</span>
       </section>
 
       <section class="auth-card" aria-labelledby="authTitle">
         <div class="auth-card-head">
-          <div class="auth-mark auth-mark-small">M</div>
+          <div class="auth-mark auth-mark-small"><img src="./macrodock-logo.svg" alt="" /></div>
           <div>
             <span class="eyebrow">MacroDock</span>
             <h1 id="authTitle">Log in</h1>

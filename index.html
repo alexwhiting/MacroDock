@@ -13,15 +13,15 @@
       document.documentElement.dataset.theme = localStorage.getItem("macrodock-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     </script>
     <link rel="manifest" href="./site.webmanifest" />
-    <link rel="icon" href="./icon.svg" type="image/svg+xml" sizes="any" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="icon" href="./macrodock-logo.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./macrodock-logo.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="page-home is-hydrating">
     <div class="app-shell">
       <aside class="sidebar" aria-label="Main navigation">
         <div class="brand">
-          <div class="brand-mark">M</div>
+          <div class="brand-mark"><img src="./macrodock-logo.svg" alt="" /></div>
           <div>
             <strong>MacroDock</strong>
             <span>Nutrition + fitness</span>
