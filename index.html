@@ -135,8 +135,9 @@
         <div id="foodDialog" class="dialog-backdrop" aria-hidden="true">
           <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="foodDialogTitle">
             <div class="food-sheet-head">
-              <button id="closeFoodForm" class="icon-button" type="button" aria-label="Close food form">&times;</button>
+              <button id="backToFoodSearch" class="icon-button food-back-icon" type="button" aria-label="Back to food search" hidden>‹</button>
               <strong id="foodDialogTitle">Add food</strong>
+              <button id="closeFoodForm" class="icon-button food-close-icon" type="button" aria-label="Close food form">&times;</button>
             </div>
             <form id="foodForm" class="stacked-form">
               <div id="foodSearchView" class="food-search-view">
@@ -147,19 +148,34 @@
                 <div class="food-tabs" role="tablist" aria-label="Food sources">
                   <button class="food-tab is-active" type="button" data-food-tab="all">All</button>
                   <button class="food-tab" type="button" data-food-tab="history">History</button>
+                  <button class="food-tab" type="button" data-food-tab="barcode">Barcode</button>
                 </div>
-                <p id="foodSearchStatus" class="food-search-status">Showing starter foods saved in MacroDock.</p>
+                <div id="barcodeLookupPanel" class="barcode-lookup-panel" hidden>
+                  <label>
+                    Barcode number
+                    <input id="barcodeLookupInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter UPC or EAN" />
+                  </label>
+                  <button id="barcodeLookupButton" class="primary-button" type="button">Find food</button>
+                </div>
+                <p id="foodSearchStatus" class="food-search-status" hidden></p>
                 <div id="foodResults" class="food-results" aria-live="polite"></div>
               </div>
               <div id="foodDetailView" class="food-detail-view" hidden>
-                <section class="selected-food-card" aria-live="polite">
-                  <span class="eyebrow">Selected food</span>
+                <section class="selected-food-hero" aria-live="polite">
                   <h3 id="selectedFoodName">Food</h3>
-                  <div id="selectedFoodMacros" class="selected-food-macros"></div>
+                  <p id="selectedFoodSource"></p>
                 </section>
-                <div class="two-column food-log-controls">
+                <div class="food-log-controls detail-control-list">
                   <label>
-                    Meal
+                    <span>Serving size</span>
+                    <output id="selectedServingBase">1 serving</output>
+                  </label>
+                  <label>
+                    <span>Number of servings</span>
+                    <input id="servingSize" type="number" min="0.25" step="0.25" value="1" />
+                  </label>
+                  <label>
+                    <span>Meal</span>
                     <select id="mealSelect">
                       <option>Breakfast</option>
                       <option>Lunch</option>
@@ -167,17 +183,18 @@
                       <option>Snack</option>
                     </select>
                   </label>
-                  <label>
-                    Serving
-                    <input id="servingSize" type="number" min="0.25" step="0.25" value="1" />
-                  </label>
                 </div>
+                <div id="selectedFoodMacros" class="selected-food-macros"></div>
               </div>
               <button id="useCustomFood" class="ghost-button" type="button">Add custom food</button>
               <div id="customFoodFields" class="custom-food-fields" hidden>
                 <label>
                   Food name
                   <input id="customFoodName" type="text" placeholder="Example: Banana" />
+                </label>
+                <label>
+                  Serving size
+                  <input id="customServingLabel" type="text" placeholder="Example: 100g, 1 bar, 1 cup" />
                 </label>
                 <div class="two-column">
                   <label>
@@ -199,6 +216,10 @@
                   <label>
                     Fiber (g)
                     <input id="customFiber" type="number" min="0" step="0.1" value="0" />
+                  </label>
+                  <label>
+                    Sodium (mg)
+                    <input id="customSodium" type="number" min="0" step="1" value="0" />
                   </label>
                   <label>
                     Calcium (mg)
@@ -313,6 +334,7 @@
       </main>
     </div>
 
+    <script src="./foods.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

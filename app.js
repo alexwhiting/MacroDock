@@ -1,247 +1,22 @@
 const defaultCalorieGoal = null;
+const foods = window.MacroDockFoods || [];
 const defaultMacroGoals = {
   protein: 160,
   carbs: 245,
   fat: 72
 };
+
 const microGoals = {
   fiber: 30,
+  sodium: 2300,
   calcium: 1000,
   iron: 18,
   vitaminC: 90,
   potassium: 3400
 };
 
-const foods = [
-  {
-    name: "Greek yogurt bowl",
-    calories: 310,
-    protein: 28,
-    carbs: 36,
-    fat: 6,
-    fiber: 5,
-    calcium: 260,
-    iron: 1.2,
-    vitaminC: 18,
-    potassium: 420
-  },
-  {
-    name: "Chicken rice bowl",
-    calories: 560,
-    protein: 45,
-    carbs: 62,
-    fat: 15,
-    fiber: 7,
-    calcium: 80,
-    iron: 2.4,
-    vitaminC: 28,
-    potassium: 760
-  },
-  {
-    name: "Salmon plate",
-    calories: 640,
-    protein: 48,
-    carbs: 42,
-    fat: 30,
-    fiber: 8,
-    calcium: 110,
-    iron: 2.1,
-    vitaminC: 42,
-    potassium: 920
-  },
-  {
-    name: "Protein smoothie",
-    calories: 380,
-    protein: 34,
-    carbs: 48,
-    fat: 8,
-    fiber: 9,
-    calcium: 360,
-    iron: 1.8,
-    vitaminC: 55,
-    potassium: 710
-  },
-  {
-    name: "Turkey avocado wrap",
-    calories: 470,
-    protein: 33,
-    carbs: 44,
-    fat: 19,
-    fiber: 8,
-    calcium: 180,
-    iron: 3,
-    vitaminC: 14,
-    potassium: 690
-  },
-  {
-    name: "Apple",
-    calories: 95,
-    protein: 0.5,
-    carbs: 25,
-    fat: 0.3,
-    fiber: 4.4,
-    calcium: 11,
-    iron: 0.2,
-    vitaminC: 8,
-    potassium: 195
-  },
-  {
-    name: "Banana",
-    calories: 105,
-    protein: 1.3,
-    carbs: 27,
-    fat: 0.4,
-    fiber: 3.1,
-    calcium: 6,
-    iron: 0.3,
-    vitaminC: 10,
-    potassium: 422
-  },
-  {
-    name: "Large egg",
-    calories: 72,
-    protein: 6.3,
-    carbs: 0.4,
-    fat: 4.8,
-    fiber: 0,
-    calcium: 28,
-    iron: 0.9,
-    vitaminC: 0,
-    potassium: 69
-  },
-  {
-    name: "Bacon, cooked",
-    calories: 43,
-    protein: 3,
-    carbs: 0.1,
-    fat: 3.3,
-    fiber: 0,
-    calcium: 1,
-    iron: 0.1,
-    vitaminC: 0,
-    potassium: 45
-  },
-  {
-    name: "Oatmeal, cooked",
-    calories: 154,
-    protein: 6,
-    carbs: 27,
-    fat: 3,
-    fiber: 4,
-    calcium: 21,
-    iron: 1.7,
-    vitaminC: 0,
-    potassium: 164
-  },
-  {
-    name: "Whole wheat toast",
-    calories: 81,
-    protein: 4,
-    carbs: 14,
-    fat: 1.1,
-    fiber: 2,
-    calcium: 38,
-    iron: 1,
-    vitaminC: 0,
-    potassium: 69
-  },
-  {
-    name: "Milk, 2%",
-    calories: 122,
-    protein: 8,
-    carbs: 12,
-    fat: 5,
-    fiber: 0,
-    calcium: 309,
-    iron: 0,
-    vitaminC: 0,
-    potassium: 390
-  },
-  {
-    name: "Chicken breast, cooked",
-    calories: 165,
-    protein: 31,
-    carbs: 0,
-    fat: 3.6,
-    fiber: 0,
-    calcium: 15,
-    iron: 1,
-    vitaminC: 0,
-    potassium: 256
-  },
-  {
-    name: "White rice, cooked",
-    calories: 205,
-    protein: 4.3,
-    carbs: 45,
-    fat: 0.4,
-    fiber: 0.6,
-    calcium: 16,
-    iron: 1.9,
-    vitaminC: 0,
-    potassium: 55
-  },
-  {
-    name: "Peanut butter",
-    calories: 190,
-    protein: 7,
-    carbs: 7,
-    fat: 16,
-    fiber: 2,
-    calcium: 17,
-    iron: 0.6,
-    vitaminC: 0,
-    potassium: 189
-  },
-  {
-    name: "Quest Protein Bar, Chocolate Chip Cookie Dough",
-    calories: 190,
-    protein: 21,
-    carbs: 21,
-    fat: 8,
-    fiber: 14,
-    calcium: 150,
-    iron: 1.1,
-    vitaminC: 0,
-    potassium: 120
-  },
-  {
-    name: "Clif Bar, Chocolate Chip",
-    calories: 250,
-    protein: 10,
-    carbs: 43,
-    fat: 5,
-    fiber: 4,
-    calcium: 45,
-    iron: 2,
-    vitaminC: 0,
-    potassium: 240
-  },
-  {
-    name: "RXBAR, Chocolate Sea Salt",
-    calories: 210,
-    protein: 12,
-    carbs: 24,
-    fat: 9,
-    fiber: 5,
-    calcium: 50,
-    iron: 2,
-    vitaminC: 0,
-    potassium: 300
-  },
-  {
-    name: "Apple and almonds",
-    calories: 240,
-    protein: 7,
-    carbs: 28,
-    fat: 14,
-    fiber: 8,
-    calcium: 90,
-    iron: 1.1,
-    vitaminC: 8,
-    potassium: 310
-  }
-];
+const nutritionKeys = ["calories", "protein", "carbs", "fat", "fiber", "sodium", "calcium", "iron", "vitaminC", "potassium"];
+const recentFoodLimit = 50;
 
 const defaultStateStorageKey = "macrodock-state";
 
@@ -252,6 +27,7 @@ function defaultDiaryState() {
     water: 0,
     waterByDate: {},
     recentFoods: [],
+    customFoods: [],
     diaryDate: null
   };
 }
@@ -269,7 +45,8 @@ const state = readStoredState(activeStateStorageKey);
 
 const supabaseProfileColumns = {
   theme: true,
-  recentFoods: true
+  recentFoods: true,
+  customFoods: true
 };
 
 function diaryTodayIso() {
@@ -288,6 +65,9 @@ function normalizeDiaryState() {
   }
   if (!Array.isArray(state.recentFoods)) {
     state.recentFoods = [];
+  }
+  if (!Array.isArray(state.customFoods)) {
+    state.customFoods = [];
   }
   if (typeof state.water === "number" && state.water > 0 && state.waterByDate[today] === undefined) {
     state.waterByDate[today] = state.water;
@@ -477,6 +257,7 @@ const MEAL_ICONS = {
 let selectedFood = foods[0];
 let foodSearchTimer;
 let latestFoodSearchToken = 0;
+let barcodeLookupToken = 0;
 let isCustomFoodMode = false;
 let activeFoodTab = "all";
 let currentSupabaseUser = null;
@@ -492,20 +273,28 @@ const runtimeConfig = {
 
 const elements = {
   foodSearch: document.querySelector("#foodSearch"),
+  barcodeLookupPanel: document.querySelector("#barcodeLookupPanel"),
+  barcodeLookupInput: document.querySelector("#barcodeLookupInput"),
+  barcodeLookupButton: document.querySelector("#barcodeLookupButton"),
   foodSearchView: document.querySelector("#foodSearchView"),
   foodDetailView: document.querySelector("#foodDetailView"),
   foodSearchStatus: document.querySelector("#foodSearchStatus"),
   foodResults: document.querySelector("#foodResults"),
+  backToFoodSearch: document.querySelector("#backToFoodSearch"),
   useCustomFood: document.querySelector("#useCustomFood"),
   selectedFoodName: document.querySelector("#selectedFoodName"),
+  selectedFoodSource: document.querySelector("#selectedFoodSource"),
+  selectedServingBase: document.querySelector("#selectedServingBase"),
   selectedFoodMacros: document.querySelector("#selectedFoodMacros"),
   customFoodFields: document.querySelector("#customFoodFields"),
   customFoodName: document.querySelector("#customFoodName"),
+  customServingLabel: document.querySelector("#customServingLabel"),
   customCalories: document.querySelector("#customCalories"),
   customProtein: document.querySelector("#customProtein"),
   customCarbs: document.querySelector("#customCarbs"),
   customFat: document.querySelector("#customFat"),
   customFiber: document.querySelector("#customFiber"),
+  customSodium: document.querySelector("#customSodium"),
   customCalcium: document.querySelector("#customCalcium"),
   customIron: document.querySelector("#customIron"),
   customVitaminC: document.querySelector("#customVitaminC"),
@@ -669,6 +458,10 @@ function profileColumnSelect() {
     columns.push("recent_foods");
   }
 
+  if (supabaseProfileColumns.customFoods) {
+    columns.push("custom_foods");
+  }
+
   return columns.join(",");
 }
 
@@ -680,6 +473,11 @@ function markMissingProfileColumn(error) {
     return true;
   }
 
+  if (message.includes("custom_foods")) {
+    supabaseProfileColumns.customFoods = false;
+    return true;
+  }
+
   if (message.includes("profiles.theme") || message.includes("theme")) {
     supabaseProfileColumns.theme = false;
     return true;
@@ -688,19 +486,27 @@ function markMissingProfileColumn(error) {
   return false;
 }
 
-function profilePayload({ userId, name, account, theme, recentFoods }) {
+function profilePayload(profile) {
+  const { userId, name, account, theme, recentFoods, customFoods } = profile;
   const payload = {
     user_id: userId,
-    name,
-    account
+    name
   };
+
+  if (Object.prototype.hasOwnProperty.call(profile, "account")) {
+    payload.account = account;
+  }
 
   if (supabaseProfileColumns.theme) {
     payload.theme = theme;
   }
 
   if (supabaseProfileColumns.recentFoods) {
-    payload.recent_foods = recentFoods;
+    payload.recent_foods = sanitizeRecentFoods(recentFoods || []);
+  }
+
+  if (supabaseProfileColumns.customFoods) {
+    payload.custom_foods = sanitizeCustomFoods(customFoods || []);
   }
 
   return payload;
@@ -735,9 +541,9 @@ function saveThemePreference(theme) {
     upsertSupabaseProfile({
       userId: currentSupabaseUser.id,
       name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
-      account: storedAccount(),
       theme,
-      recentFoods: state.recentFoods || []
+      recentFoods: state.recentFoods || [],
+      customFoods: state.customFoods || []
     }).catch((error) => {
       console.warn("Theme cloud save failed", error);
     });
@@ -751,6 +557,9 @@ function saveThemePreference(theme) {
 }
 
 function saveRecentFoodsPreference() {
+  state.recentFoods = sanitizeRecentFoods(state.recentFoods);
+  localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
+
   if (!(getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id)) {
     return;
   }
@@ -758,11 +567,30 @@ function saveRecentFoodsPreference() {
   upsertSupabaseProfile({
     userId: currentSupabaseUser.id,
     name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
-    account: storedAccount(),
     theme: getInitialTheme(),
-    recentFoods: state.recentFoods || []
+    recentFoods: state.recentFoods,
+    customFoods: state.customFoods || []
   }).catch((error) => {
     console.warn("Recent foods cloud save failed", error);
+  });
+}
+
+function saveCustomFoodsPreference() {
+  state.customFoods = sanitizeCustomFoods(state.customFoods);
+  localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
+
+  if (!(getAuthProvider() === "supabase" && supabaseEnabled() && currentSupabaseUser?.id)) {
+    return;
+  }
+
+  upsertSupabaseProfile({
+    userId: currentSupabaseUser.id,
+    name: storedAccount()?.name || currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
+    theme: getInitialTheme(),
+    recentFoods: state.recentFoods || [],
+    customFoods: state.customFoods
+  }).catch((error) => {
+    console.warn("Custom foods cloud save failed", error);
   });
 }
 
@@ -999,7 +827,8 @@ function saveAccountFromForm(event) {
             name: account.name,
             account,
             theme: getInitialTheme(),
-            recentFoods: state.recentFoods || []
+            recentFoods: state.recentFoods || [],
+            customFoods: state.customFoods || []
           }, { returnRepresentation: true }))
         .then((rows) => {
           const savedAccount = rows?.[0]?.account || account;
@@ -1255,9 +1084,8 @@ function isProtectedPage() {
 }
 
 function redirectAfterAuth() {
-  const target = sessionStorage.getItem("macrodock-post-auth") || "./index.html";
   sessionStorage.removeItem("macrodock-post-auth");
-  window.location.href = target;
+  window.location.href = "./index.html";
 }
 
 function redirectToMetricsSetup() {
@@ -1390,11 +1218,21 @@ async function loadSupabaseProfile(user) {
   if (profile?.theme === "dark" || profile?.theme === "light") {
     applyTheme(profile.theme);
   }
-  const remoteRecentFoods = Array.isArray(profile?.recent_foods) ? profile.recent_foods : [];
-  if (remoteRecentFoods.length || !state.recentFoods.length) {
+  const remoteRecentFoods = sanitizeRecentFoods(profile?.recent_foods);
+  const localRecentFoods = sanitizeRecentFoods(state.recentFoods);
+  if (remoteRecentFoods.length || !localRecentFoods.length) {
     state.recentFoods = remoteRecentFoods;
   } else {
+    state.recentFoods = localRecentFoods;
     saveRecentFoodsPreference();
+  }
+  const remoteCustomFoods = sanitizeCustomFoods(profile?.custom_foods);
+  const localCustomFoods = sanitizeCustomFoods(state.customFoods);
+  if (remoteCustomFoods.length || !localCustomFoods.length) {
+    state.customFoods = remoteCustomFoods;
+  } else {
+    state.customFoods = localCustomFoods;
+    saveCustomFoodsPreference();
   }
   saveState();
 
@@ -1755,7 +1593,8 @@ async function deleteAccountData() {
         name: currentSupabaseUser.user_metadata?.name || currentSupabaseUser.email || "",
         account: null,
         theme: getInitialTheme(),
-        recentFoods: []
+        recentFoods: [],
+        customFoods: []
       });
     }
   } catch (error) {
@@ -1768,16 +1607,22 @@ async function deleteAccountData() {
   state.water = 0;
   state.waterByDate = {};
   state.recentFoods = [];
+  state.customFoods = [];
   saveState();
   logout();
 }
 
 function defaultFoodApiBase() {
-  return window.location.protocol === "file:" ? "http://localhost:8787" : window.location.origin;
+  return window.location.protocol === "file:" ? "http://localhost:8790" : window.location.origin;
 }
 
 function getFoodApiBase() {
-  return (localStorage.getItem("macrodock-food-api-base") || defaultFoodApiBase()).replace(/\/$/, "");
+  const savedApiBase = localStorage.getItem("macrodock-food-api-base") || "";
+  if (window.location.protocol === "file:" && savedApiBase.replace(/\/$/, "") === "http://localhost:8787") {
+    localStorage.removeItem("macrodock-food-api-base");
+    return defaultFoodApiBase();
+  }
+  return (savedApiBase || defaultFoodApiBase()).replace(/\/$/, "");
 }
 
 function saveFoodApiBase() {
@@ -1806,34 +1651,118 @@ function dedupeFoodList(list) {
   return list.filter((food, index, allFoods) => allFoods.findIndex((item) => item.name.toLowerCase() === food.name.toLowerCase()) === index);
 }
 
+function normalizeFoodNutrition(food = {}, source = "Starter") {
+  const normalized = {
+    ...food,
+    name: food.name || "Food",
+    servingLabel: food.servingLabel || food.servingSizeLabel || food.serving || "1 serving",
+    source: food.source || source
+  };
+
+  nutritionKeys.forEach((key) => {
+    normalized[key] = Number(food[key]) || 0;
+  });
+
+  return normalized;
+}
+
+function sanitizeRecentFoods(recentFoods = []) {
+  if (!Array.isArray(recentFoods)) {
+    return [];
+  }
+
+  const seen = new Set();
+
+  return recentFoods
+    .map((food) => normalizeFoodNutrition(food, "Recent"))
+    .filter((food) => {
+      const key = food.name.trim().toLowerCase();
+      if (!key || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .slice(0, recentFoodLimit);
+}
+
+function sanitizeCustomFoods(customFoods = []) {
+  if (!Array.isArray(customFoods)) {
+    return [];
+  }
+
+  const seen = new Set();
+
+  return customFoods
+    .map((food) => normalizeFoodNutrition(food, "Custom"))
+    .filter((food) => {
+      const key = food.name.trim().toLowerCase();
+      if (!key || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 100);
+}
+
 function localFoodMatches(query, source = "all") {
-  const baseFoods = source === "history" ? state.recentFoods : dedupeFoodList([...state.recentFoods, ...foods]);
+  const baseFoods = source === "history" ? state.recentFoods : dedupeFoodList([...foods, ...state.customFoods]);
   return baseFoods
     .filter((food) => food.name.toLowerCase().includes(query.toLowerCase()))
-    .map((food) => ({ ...food, source: food.source || (source === "history" ? "History" : "Starter") }))
+    .map((food) => normalizeFoodNutrition(food, source === "history" ? "History" : food.source || "MacroDock"))
     .slice(0, 12);
 }
 
+function mergeFoodSearchLayers({ local = [], cached = [], api = [], custom = [] }) {
+  return dedupeFoodList([
+    ...local.map((food) => normalizeFoodNutrition(food, "MacroDock")),
+    ...cached.map((food) => normalizeFoodNutrition(food, "Cached")),
+    ...api.map((food) => normalizeFoodNutrition(food, "USDA")),
+    ...custom.map((food) => normalizeFoodNutrition(food, "Custom"))
+  ]).slice(0, 24);
+}
+
+async function searchFoodDatabase(query) {
+  const params = new URLSearchParams({ q: query });
+  const response = await fetch(`${getFoodApiBase()}/api/foods/search?${params.toString()}`);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Food database unavailable.");
+  }
+
+  return data;
+}
+
+async function lookupFoodBarcode(barcode) {
+  const params = new URLSearchParams({ code: barcode });
+  const response = await fetch(`${getFoodApiBase()}/api/foods/barcode?${params.toString()}`);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Barcode lookup unavailable.");
+  }
+
+  return data.food;
+}
+
 function foodForHistory(food) {
-  return {
-    name: food.name,
-    calories: Number(food.calories) || 0,
-    protein: Number(food.protein) || 0,
-    carbs: Number(food.carbs) || 0,
-    fat: Number(food.fat) || 0,
-    fiber: Number(food.fiber) || 0,
-    calcium: Number(food.calcium) || 0,
-    iron: Number(food.iron) || 0,
-    vitaminC: Number(food.vitaminC) || 0,
-    potassium: Number(food.potassium) || 0,
-    source: food.source || "Recent"
-  };
+  return normalizeFoodNutrition(food, "Recent");
 }
 
 function addRecentFood(food) {
   const nextFood = foodForHistory(food);
-  state.recentFoods = [nextFood, ...state.recentFoods.filter((item) => item.name.toLowerCase() !== nextFood.name.toLowerCase())].slice(0, 20);
+  const currentRecentFoods = sanitizeRecentFoods(state.recentFoods);
+  state.recentFoods = sanitizeRecentFoods([nextFood, ...currentRecentFoods.filter((item) => item.name.toLowerCase() !== nextFood.name.toLowerCase())]);
   saveRecentFoodsPreference();
+}
+
+function addCustomFood(food) {
+  const nextFood = normalizeFoodNutrition({ ...food, source: "Custom" }, "Custom");
+  const currentCustomFoods = sanitizeCustomFoods(state.customFoods);
+  state.customFoods = sanitizeCustomFoods([nextFood, ...currentCustomFoods.filter((item) => item.name.toLowerCase() !== nextFood.name.toLowerCase())]);
+  saveCustomFoodsPreference();
 }
 
 function logFoodToMeal(food, servings = 1) {
@@ -1897,6 +1826,7 @@ function totalsFromFood() {
       carbs: 0,
       fat: 0,
       fiber: 0,
+      sodium: 0,
       calcium: 0,
       iron: 0,
       vitaminC: 0,
@@ -1941,7 +1871,7 @@ function renderFoodResults(results) {
         <button class="food-result-button${selectedClass}" type="button" data-food-result="${index}">
           <div>
             <strong>${escapeHtml(food.name)}</strong>
-            <span>${formatNumber(food.calories)} kcal - ${formatNumber(food.protein)}g protein - ${formatNumber(food.carbs)}g carbs - ${formatNumber(food.fat)}g fat</span>
+            <span>${formatNumber(food.calories)} kcal per ${escapeHtml(food.servingLabel || "1 serving")} - ${formatNumber(food.protein)}g protein - ${formatNumber(food.carbs)}g carbs - ${formatNumber(food.fat)}g fat</span>
           </div>
           <span class="food-add-circle" aria-hidden="true">${selectedClass ? "✓" : "›"}</span>
         </button>
@@ -1950,6 +1880,84 @@ function renderFoodResults(results) {
     .join("");
 
   elements.foodResults.dataset.results = JSON.stringify(results);
+}
+
+function renderFoodSearchMessage(message) {
+  if (!elements.foodResults || !message) {
+    return;
+  }
+
+  elements.foodResults.insertAdjacentHTML("beforeend", `<div class="empty-state food-search-message">${escapeHtml(message)}</div>`);
+}
+
+function setFoodSearchStatus(message = "") {
+  if (!elements.foodSearchStatus) {
+    return;
+  }
+
+  elements.foodSearchStatus.hidden = !message;
+  elements.foodSearchStatus.textContent = message;
+}
+
+function updateFoodSourceControls() {
+  const isBarcode = activeFoodTab === "barcode";
+  if (elements.barcodeLookupPanel) {
+    elements.barcodeLookupPanel.hidden = !isBarcode;
+  }
+  if (elements.foodSearch) {
+    elements.foodSearch.closest(".food-search-wrap").hidden = isBarcode;
+  }
+  if (elements.foodResults) {
+    elements.foodResults.hidden = false;
+  }
+}
+
+function lookupBarcodeFood() {
+  if (!elements.barcodeLookupInput || !elements.barcodeLookupButton) {
+    return;
+  }
+
+  const barcode = elements.barcodeLookupInput.value.replace(/\D/g, "");
+
+  if (barcode.length < 8) {
+    setFoodSearchStatus("Enter at least 8 barcode digits.");
+    return;
+  }
+
+  const token = ++barcodeLookupToken;
+  elements.barcodeLookupButton.disabled = true;
+  elements.barcodeLookupButton.textContent = "Finding...";
+  setFoodSearchStatus("Looking up barcode...");
+  elements.foodResults.innerHTML = '<div class="empty-state">Searching package database...</div>';
+  elements.foodResults.dataset.results = "[]";
+
+  lookupFoodBarcode(barcode)
+    .then((food) => {
+      if (token !== barcodeLookupToken || activeFoodTab !== "barcode") {
+        return;
+      }
+      const normalized = normalizeFoodNutrition(food, "Open Food Facts");
+      setFoodSearchStatus("Product found. Review the serving size before logging.");
+      renderFoodResults([normalized]);
+      selectFoodResult(normalized);
+    })
+    .catch((error) => {
+      if (token !== barcodeLookupToken || activeFoodTab !== "barcode") {
+        return;
+      }
+      selectedFood = null;
+      elements.foodSubmitButton.disabled = true;
+      setFoodSearchStatus(error.message || "No food found for that barcode.");
+      elements.foodResults.innerHTML = '<div class="empty-state">No packaged food found. Add it as a custom food instead.</div>';
+      elements.foodResults.dataset.results = "[]";
+    })
+    .finally(() => {
+      if (token !== barcodeLookupToken) {
+        return;
+      }
+      elements.barcodeLookupButton.disabled = false;
+      elements.barcodeLookupButton.textContent = "Find food";
+    });
 }
 
 function renderSelectedFoodDetail() {
@@ -1970,17 +1978,22 @@ function renderSelectedFoodDetail() {
   const fatPercent = macroGoals.fat ? Math.round((fat / macroGoals.fat) * 100) : 0;
   const proteinPercent = macroGoals.protein ? Math.round((protein / macroGoals.protein) * 100) : 0;
   elements.selectedFoodName.textContent = selectedFood.name || "Food";
+  elements.selectedFoodSource.textContent = selectedFood.source && !["Starter", "Recent", "History"].includes(selectedFood.source)
+    ? selectedFood.source
+    : "";
+  elements.selectedServingBase.textContent = selectedFood.servingLabel || "1 serving";
   elements.selectedFoodMacros.innerHTML = `
-    <div class="selected-calorie-card"><span>${caloriePercent}%</span><strong>${formatNumber(calories)} kcal</strong><small>Calories</small></div>
     <div><span>${carbPercent}%</span><strong>${formatNumber(carbs)}g</strong><small>Carbs</small></div>
     <div><span>${fatPercent}%</span><strong>${formatNumber(fat)}g</strong><small>Fat</small></div>
     <div><span>${proteinPercent}%</span><strong>${formatNumber(protein)}g</strong><small>Protein</small></div>
+    <div class="selected-calorie-card"><span>${caloriePercent}%</span><strong>${formatNumber(calories)} kcal</strong><small>Calories</small></div>
   `;
 }
 
 function setFoodDetailView(isDetail) {
   elements.foodSearchView.hidden = isDetail;
   elements.foodDetailView.hidden = !isDetail;
+  elements.backToFoodSearch.hidden = !isDetail || editingFoodIndex !== null;
   elements.useCustomFood.hidden = isDetail && !isCustomFoodMode;
   elements.foodSubmitButton.hidden = !isDetail && !isCustomFoodMode;
 
@@ -1992,8 +2005,29 @@ function setFoodDetailView(isDetail) {
 function resetFoodDetailView() {
   elements.foodSearchView.hidden = false;
   elements.foodDetailView.hidden = true;
+  elements.backToFoodSearch.hidden = true;
   elements.useCustomFood.hidden = false;
   elements.foodSubmitButton.hidden = true;
+  updateFoodSourceControls();
+}
+
+function returnToFoodSearch() {
+  if (editingFoodIndex !== null) {
+    return;
+  }
+
+  selectedFood = null;
+  isCustomFoodMode = false;
+  elements.foodForm.classList.remove("is-custom-mode");
+  elements.customFoodFields.hidden = true;
+  elements.useCustomFood.textContent = "Add custom food";
+  resetFoodDetailView();
+  renderFoodSearch();
+  if (activeFoodTab === "barcode") {
+    elements.barcodeLookupInput?.focus();
+  } else {
+    elements.foodSearch.focus();
+  }
 }
 
 function selectFoodResult(food) {
@@ -2005,8 +2039,8 @@ function selectFoodResult(food) {
   elements.foodSubmitButton.textContent = editingFoodIndex === null ? "Log selected food" : "Save food";
   elements.foodSubmitButton.disabled = false;
   elements.foodSubmitButton.hidden = false;
-  elements.foodSearchStatus.textContent = `${food.name} selected.`;
   setFoodDetailView(true);
+  setFoodSearchStatus("");
 
   const results = JSON.parse(elements.foodResults.dataset.results || "[]");
   renderFoodResults(results.length ? results : [food]);
@@ -2017,23 +2051,61 @@ function renderFoodSearch() {
     return;
   }
 
+  if (activeFoodTab === "barcode") {
+    selectedFood = null;
+    elements.foodResults.innerHTML = '<div class="empty-state">Enter the barcode number from the package.</div>';
+    elements.foodResults.dataset.results = "[]";
+    elements.foodSubmitButton.disabled = true;
+    return;
+  }
+
   const query = elements.foodSearch.value.trim();
   const source = activeFoodTab === "history" ? "history" : "all";
 
   if (query.length < 2) {
     const starterFoods = localFoodMatches("", source);
     selectedFood = null;
-    elements.foodSearchStatus.textContent = activeFoodTab === "history" ? "History" : "All foods";
     renderFoodResults(starterFoods);
     return;
   }
 
-  latestFoodSearchToken++;
-  const localResults = localFoodMatches(query, source);
-
+  const token = ++latestFoodSearchToken;
   selectedFood = null;
-  elements.foodSearchStatus.textContent = localResults.length ? "Showing local matches." : "No local matches. Add a custom food instead.";
-  renderFoodResults(localResults);
+
+  if (source === "history") {
+    renderFoodResults(localFoodMatches(query, source));
+    return;
+  }
+
+  const customResults = sanitizeCustomFoods(state.customFoods)
+    .filter((food) => food.name.toLowerCase().includes(query.toLowerCase()));
+  renderFoodResults(mergeFoodSearchLayers({ local: localFoodMatches(query), custom: customResults }));
+
+  if (query.length < 4) {
+    return;
+  }
+
+  searchFoodDatabase(query)
+    .then((data) => {
+      if (token !== latestFoodSearchToken || activeFoodTab !== "all") {
+        return;
+      }
+
+      renderFoodResults(mergeFoodSearchLayers({
+        local: data.layers?.local || localFoodMatches(query),
+        cached: data.layers?.cached || [],
+        api: data.layers?.api || [],
+        custom: customResults
+      }));
+      if (data.apiError && !(data.layers?.api || []).length) {
+        renderFoodSearchMessage("Online food search is temporarily unavailable. Showing local, cached, and custom foods.");
+      }
+    })
+    .catch(() => {
+      if (token === latestFoodSearchToken && activeFoodTab === "all" && !elements.foodResults.dataset.results?.length) {
+        renderFoodResults(mergeFoodSearchLayers({ local: localFoodMatches(query), custom: customResults }));
+      }
+    });
 }
 
 function renderMetricRows(container, metrics) {
@@ -2075,7 +2147,7 @@ function renderMealSections() {
           <div class="meal-food-row" data-food-edit="${item.globalIndex}">
             <button class="meal-food-main" type="button" aria-label="Edit serving for ${escapeHtml(item.name)}">
               <strong>${escapeHtml(item.name)}</strong>
-              <span>${item.servings} serving · ${formatNumber(item.calories)} kcal</span>
+              <span>${item.servings} x ${escapeHtml(item.servingLabel || "serving")} · ${formatNumber(item.calories)} kcal</span>
             </button>
             <div class="meal-row-actions">
               <button class="delete-button" type="button" data-food-index="${item.globalIndex}" aria-label="Remove ${escapeHtml(item.name)}">&times;</button>
@@ -2232,6 +2304,13 @@ function renderDashboard() {
       displayGoal: `${microGoals.fiber}g`
     },
     {
+      label: "Sodium",
+      value: foodTotals.sodium,
+      goal: microGoals.sodium,
+      displayValue: `${formatNumber(foodTotals.sodium)}mg`,
+      displayGoal: `${microGoals.sodium}mg`
+    },
+    {
       label: "Calcium",
       value: foodTotals.calcium,
       goal: microGoals.calcium,
@@ -2284,7 +2363,7 @@ function setCustomFoodMode(isCustom, shouldFocus = true) {
   elements.foodSubmitButton.hidden = false;
 
   if (isCustom) {
-    elements.foodSearchStatus.textContent = "Enter the nutrition details for your custom food.";
+    setFoodSearchStatus("Enter the nutrition details for your custom food.");
     elements.foodSearchView.hidden = true;
     elements.foodDetailView.hidden = false;
     elements.useCustomFood.hidden = false;
@@ -2301,6 +2380,8 @@ function setCustomFoodMode(isCustom, shouldFocus = true) {
 
   if (isCustom) {
     elements.customFoodName.focus();
+  } else if (activeFoodTab === "barcode") {
+    elements.barcodeLookupInput?.focus();
   } else {
     elements.foodSearch.focus();
   }
@@ -2313,11 +2394,16 @@ function setFoodDialogOpen(isOpen) {
   if (isOpen) {
     if (editingFoodIndex === null) {
       elements.foodSearch.value = "";
+      if (elements.barcodeLookupInput) {
+        elements.barcodeLookupInput.value = "";
+      }
       elements.servingSize.value = "1";
       elements.mealSelect.disabled = false;
       activeFoodTab = "all";
       elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
       latestFoodSearchToken++;
+      barcodeLookupToken++;
+      setFoodSearchStatus("");
       resetCustomFoodFields();
       resetFoodDetailView();
       setCustomFoodMode(false, false);
@@ -2328,6 +2414,7 @@ function setFoodDialogOpen(isOpen) {
     selectedFood = null;
     elements.foodForm.classList.remove("is-custom-mode", "is-serving-edit");
     elements.mealSelect.disabled = false;
+    setFoodSearchStatus("");
     elements.useCustomFood.hidden = false;
     elements.useCustomFood.textContent = "Add custom food";
     elements.foodSubmitButton.textContent = "Log selected food";
@@ -2340,11 +2427,13 @@ function setFoodDialogOpen(isOpen) {
 
 function resetCustomFoodFields() {
   elements.customFoodName.value = "";
+  elements.customServingLabel.value = "";
   elements.customCalories.value = "0";
   elements.customProtein.value = "0";
   elements.customCarbs.value = "0";
   elements.customFat.value = "0";
   elements.customFiber.value = "0";
+  elements.customSodium.value = "0";
   elements.customCalcium.value = "0";
   elements.customIron.value = "0";
   elements.customVitaminC.value = "0";
@@ -2353,11 +2442,13 @@ function resetCustomFoodFields() {
 
 function populateCustomFoodFields(food) {
   elements.customFoodName.value = food.name || "";
+  elements.customServingLabel.value = food.servingLabel || "1 serving";
   elements.customCalories.value = Number(food.calories) || 0;
   elements.customProtein.value = Number(food.protein) || 0;
   elements.customCarbs.value = Number(food.carbs) || 0;
   elements.customFat.value = Number(food.fat) || 0;
   elements.customFiber.value = Number(food.fiber) || 0;
+  elements.customSodium.value = Number(food.sodium) || 0;
   elements.customCalcium.value = Number(food.calcium) || 0;
   elements.customIron.value = Number(food.iron) || 0;
   elements.customVitaminC.value = Number(food.vitaminC) || 0;
@@ -2385,18 +2476,20 @@ function editLoggedFood(index) {
   elements.useCustomFood.hidden = true;
   elements.foodSubmitButton.hidden = false;
   setFoodDetailView(true);
-  elements.foodSearchStatus.textContent = "Editing serving size.";
+  setFoodSearchStatus("Editing serving size.");
   elements.foodSubmitButton.textContent = "Save food";
 }
 
 function customFoodFromForm() {
   return {
     name: elements.customFoodName.value.trim() || "Custom food",
+    servingLabel: elements.customServingLabel.value.trim() || "1 serving",
     calories: numberFromInput(elements.customCalories),
     protein: numberFromInput(elements.customProtein),
     carbs: numberFromInput(elements.customCarbs),
     fat: numberFromInput(elements.customFat),
     fiber: numberFromInput(elements.customFiber),
+    sodium: numberFromInput(elements.customSodium),
     calcium: numberFromInput(elements.customCalcium),
     iron: numberFromInput(elements.customIron),
     vitaminC: numberFromInput(elements.customVitaminC),
@@ -2414,6 +2507,9 @@ if (elements.foodForm) {
   }
   const servings = Math.max(Number(elements.servingSize.value), 0.25);
   const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
+  if (isCustomFoodMode) {
+    addCustomFood(foodToLog);
+  }
   logFoodToMeal(foodToLog, servings);
   elements.servingSize.value = "1";
   resetCustomFoodFields();
@@ -2469,8 +2565,27 @@ if (elements.foodSearch) {
     elements.foodResults.hidden = false;
     elements.customFoodFields.hidden = true;
     elements.useCustomFood.textContent = "Add custom food";
+    setFoodSearchStatus("");
     clearTimeout(foodSearchTimer);
-    foodSearchTimer = setTimeout(renderFoodSearch, 350);
+    foodSearchTimer = setTimeout(renderFoodSearch, 1500);
+  });
+}
+
+if (elements.barcodeLookupButton) {
+  elements.barcodeLookupButton.addEventListener("click", lookupBarcodeFood);
+}
+
+if (elements.barcodeLookupInput) {
+  elements.barcodeLookupInput.addEventListener("input", () => {
+    elements.barcodeLookupInput.value = elements.barcodeLookupInput.value.replace(/[^\d\s-]/g, "");
+    setFoodSearchStatus("");
+  });
+
+  elements.barcodeLookupInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      lookupBarcodeFood();
+    }
   });
 }
 
@@ -2483,7 +2598,12 @@ elements.foodTabs.forEach((tab) => {
     elements.customFoodFields.hidden = true;
     elements.foodResults.hidden = false;
     elements.useCustomFood.textContent = "Add custom food";
+    setFoodSearchStatus("");
+    updateFoodSourceControls();
     renderFoodSearch();
+    if (activeFoodTab === "barcode") {
+      elements.barcodeLookupInput?.focus();
+    }
   });
 });
 
@@ -2505,6 +2625,10 @@ if (elements.useCustomFood) {
   elements.useCustomFood.addEventListener("click", () => {
     setCustomFoodMode(!isCustomFoodMode);
   });
+}
+
+if (elements.backToFoodSearch) {
+  elements.backToFoodSearch.addEventListener("click", returnToFoodSearch);
 }
 
 if (elements.closeFoodForm) {

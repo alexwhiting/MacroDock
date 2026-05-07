@@ -731,10 +731,29 @@ select:focus {
   font-size: 1.6rem;
 }
 
+.food-sheet-head .icon-button[hidden] {
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.food-close-icon {
+  grid-column: 3;
+}
+
+.food-back-icon {
+  grid-column: 1;
+}
+
 #foodDialogTitle {
   justify-self: center;
   color: var(--ink);
   font-size: 1.05rem;
+}
+
+.food-search-view {
+  display: grid;
+  gap: 16px;
 }
 
 .food-search-wrap {
@@ -760,9 +779,9 @@ select:focus {
 
 .food-tabs {
   display: flex;
-  gap: 22px;
+  gap: 26px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 2px 0 8px;
 }
 
 .food-tab {
@@ -781,11 +800,40 @@ select:focus {
   color: var(--ink);
 }
 
+.barcode-lookup-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--log-bg);
+}
+
+.barcode-lookup-panel[hidden] {
+  display: none;
+}
+
+.barcode-lookup-panel label {
+  margin: 0;
+}
+
+.barcode-lookup-panel input {
+  min-height: 46px;
+}
+
+.barcode-lookup-panel .primary-button {
+  min-height: 46px;
+  padding-inline: 16px;
+}
+
 .food-results {
   display: grid;
-  gap: 10px;
+  gap: 14px;
   max-height: none;
   overflow: auto;
+  padding-top: 2px;
 }
 
 .food-search-view[hidden],
@@ -795,35 +843,90 @@ select:focus {
 
 .food-detail-view {
   display: grid;
-  gap: 14px;
+  gap: 0;
+  padding-bottom: 4px;
 }
 
-.selected-food-card {
+.selected-food-hero {
   display: grid;
-  gap: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--log-bg);
-  padding: 14px;
+  gap: 6px;
+  padding: 4px 0 22px;
 }
 
-.selected-food-card h3 {
+.selected-food-hero h3 {
   margin: 0;
   color: var(--ink);
-  font-size: 1.12rem;
+  font-size: clamp(1.25rem, 4vw, 1.78rem);
+  line-height: 1.1;
+}
+
+.selected-food-hero p {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.82rem, 2.5vw, 1rem);
   line-height: 1.2;
+}
+
+.detail-control-list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-control-list label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 42%);
+  align-items: center;
+  gap: 18px;
+  min-height: 58px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(0.88rem, 2.85vw, 1.08rem);
+  font-weight: 800;
+}
+
+.detail-control-list label + label {
+  border-top: 1px solid rgba(127, 148, 133, 0.2);
+}
+
+.detail-control-list label > span {
+  color: var(--ink);
+}
+
+.detail-control-list input,
+.detail-control-list select,
+.detail-control-list output {
+  width: 100%;
+  min-height: 42px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--green-dark);
+  padding: 0 14px;
+  text-align: right;
+  font-size: clamp(0.88rem, 2.75vw, 1.08rem);
+  font-weight: 800;
+}
+
+.detail-control-list output {
+  display: grid;
+  align-items: center;
 }
 
 .selected-food-macros {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
+  align-items: end;
+  padding-top: 22px;
 }
 
 .selected-food-macros div {
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 10px;
+  background: transparent;
+  padding: 0;
+  text-align: center;
 }
 
 .selected-food-macros span,
@@ -834,36 +937,29 @@ select:focus {
 
 .selected-food-macros span {
   color: var(--green-dark);
-  font-size: 0.92rem;
+  font-size: clamp(0.78rem, 2.45vw, 0.95rem);
   font-weight: 800;
 }
 
 .selected-food-macros strong {
   color: var(--ink);
-  margin-top: 4px;
-  font-size: 1.1rem;
+  margin-top: 6px;
+  font-size: clamp(0.95rem, 3.1vw, 1.18rem);
 }
 
 .selected-food-macros small {
   color: var(--muted);
-  margin-top: 3px;
-  font-size: 0.78rem;
+  margin-top: 4px;
+  font-size: clamp(0.68rem, 2.15vw, 0.8rem);
   font-weight: 800;
 }
 
 .selected-food-macros .selected-calorie-card {
-  display: grid;
-  align-content: center;
-  border-color: rgba(98, 199, 132, 0.3);
-}
-
-.selected-food-macros .selected-calorie-card span {
-  color: var(--muted);
-  font-size: 0.72rem;
+  order: -1;
 }
 
 .food-log-controls {
-  align-items: end;
+  align-items: stretch;
 }
 
 .food-result-button {
@@ -1878,6 +1974,10 @@ body.dialog-open {
   }
 
   .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .barcode-lookup-panel {
     grid-template-columns: 1fr;
   }
 

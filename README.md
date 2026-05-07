@@ -25,8 +25,9 @@ GET /api/foods/search?q=apple
 The app currently uses local starter foods and each user's recent food history. The backend:
 
 - searches common seeded foods immediately
-- does not require a USDA API key
-- does not call a third-party food database yet
+- searches Open Food Facts for broader packaged/branded foods
+- caches API results locally after they are found
+- can optionally use USDA FoodData Central as a fallback when `FDC_API_KEY` is configured
 - supports custom foods from the app UI
 
 ## Account Calorie Target
