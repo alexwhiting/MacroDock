@@ -155,7 +155,15 @@
                     Barcode number
                     <input id="barcodeLookupInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter UPC or EAN" />
                   </label>
-                  <button id="barcodeLookupButton" class="primary-button" type="button">Find food</button>
+                  <div class="barcode-actions">
+                    <button id="barcodeLookupButton" class="primary-button" type="button">Find food</button>
+                    <button id="barcodeScanButton" class="ghost-button barcode-scan-button" type="button">Scan</button>
+                  </div>
+                  <div id="barcodeScannerPanel" class="barcode-scanner-panel" hidden>
+                    <video id="barcodeScannerVideo" playsinline muted></video>
+                    <div class="barcode-scan-frame" aria-hidden="true"></div>
+                    <button id="barcodeStopScanButton" class="ghost-button" type="button">Stop scanner</button>
+                  </div>
                 </div>
                 <p id="foodSearchStatus" class="food-search-status" hidden></p>
                 <div id="foodResults" class="food-results" aria-live="polite"></div>

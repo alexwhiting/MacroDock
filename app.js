@@ -258,6 +258,8 @@ let selectedFood = foods[0];
 let foodSearchTimer;
 let latestFoodSearchToken = 0;
 let barcodeLookupToken = 0;
+let barcodeScannerStream = null;
+let barcodeScannerFrame = null;
 let isCustomFoodMode = false;
 let activeFoodTab = "all";
 let currentSupabaseUser = null;
@@ -276,6 +278,10 @@ const elements = {
   barcodeLookupPanel: document.querySelector("#barcodeLookupPanel"),
   barcodeLookupInput: document.querySelector("#barcodeLookupInput"),
   barcodeLookupButton: document.querySelector("#barcodeLookupButton"),
+  barcodeScanButton: document.querySelector("#barcodeScanButton"),
+  barcodeStopScanButton: document.querySelector("#barcodeStopScanButton"),
+  barcodeScannerPanel: document.querySelector("#barcodeScannerPanel"),
+  barcodeScannerVideo: document.querySelector("#barcodeScannerVideo"),
   foodSearchView: document.querySelector("#foodSearchView"),
   foodDetailView: document.querySelector("#foodDetailView"),
   foodSearchStatus: document.querySelector("#foodSearchStatus"),
@@ -1960,6 +1966,104 @@ function lookupBarcodeFood() {
     });
 }
 
+function stopBarcodeScanner() {
+  if (barcodeScannerFrame) {
+    cancelAnimationFrame(barcodeScannerFrame);
+    barcodeScannerFrame = null;
+  }
+
+  if (barcodeScannerStream) {
+    barcodeScannerStream.getTracks().forEach((track) => track.stop());
+    barcodeScannerStream = null;
+  }
+
+  if (elements.barcodeScannerVideo) {
+    elements.barcodeScannerVideo.srcObject = null;
+  }
+
+  if (elements.barcodeScannerPanel) {
+    elements.barcodeScannerPanel.hidden = true;
+  }
+
+  if (elements.barcodeScanButton) {
+    elements.barcodeScanButton.disabled = false;
+    elements.barcodeScanButton.textContent = "Scan";
+  }
+}
+
+async function startBarcodeScanner() {
+  if (!elements.barcodeScannerVideo || !elements.barcodeScanButton) {
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    setFoodSearchStatus("Camera scanning requires localhost or the live HTTPS app.");
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia || !("BarcodeDetector" in window)) {
+    setFoodSearchStatus("Camera barcode scanning is not supported on this browser. Enter the barcode number instead.");
+    return;
+  }
+
+  stopBarcodeScanner();
+  setFoodSearchStatus("Point your camera at the barcode.");
+  elements.barcodeScanButton.disabled = true;
+  elements.barcodeScanButton.textContent = "Starting...";
+
+  try {
+    const detector = new BarcodeDetector({
+      formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"]
+    });
+
+    barcodeScannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+
+    elements.barcodeScannerVideo.srcObject = barcodeScannerStream;
+    elements.barcodeScannerPanel.hidden = false;
+    elements.barcodeScanButton.textContent = "Scanning...";
+    await elements.barcodeScannerVideo.play();
+
+    const scanFrame = async () => {
+      if (!barcodeScannerStream || activeFoodTab !== "barcode") {
+        return;
+      }
+
+      try {
+        const codes = await detector.detect(elements.barcodeScannerVideo);
+        const rawValue = codes.find((code) => code.rawValue)?.rawValue || "";
+        const barcode = rawValue.replace(/\D/g, "");
+
+        if (barcode.length >= 8) {
+          elements.barcodeLookupInput.value = barcode;
+          stopBarcodeScanner();
+          setFoodSearchStatus("Barcode scanned. Looking up product...");
+          lookupBarcodeFood();
+          return;
+        }
+      } catch {
+        // Keep scanning; individual video frames can fail while autofocus settles.
+      }
+
+      barcodeScannerFrame = requestAnimationFrame(scanFrame);
+    };
+
+    barcodeScannerFrame = requestAnimationFrame(scanFrame);
+  } catch (error) {
+    stopBarcodeScanner();
+    const message = error?.name === "NotAllowedError"
+      ? "Camera permission was blocked. Allow camera access or enter the barcode manually."
+      : "Could not start the camera. Enter the barcode manually.";
+    setFoodSearchStatus(message);
+  }
+}
+
 function renderSelectedFoodDetail() {
   if (!elements.selectedFoodName || !elements.selectedFoodMacros || !selectedFood) {
     return;
@@ -2364,6 +2468,7 @@ function setCustomFoodMode(isCustom, shouldFocus = true) {
 
   if (isCustom) {
     setFoodSearchStatus("Enter the nutrition details for your custom food.");
+    stopBarcodeScanner();
     elements.foodSearchView.hidden = true;
     elements.foodDetailView.hidden = false;
     elements.useCustomFood.hidden = false;
@@ -2410,6 +2515,7 @@ function setFoodDialogOpen(isOpen) {
     }
   } else {
     editingFoodIndex = null;
+    stopBarcodeScanner();
     isCustomFoodMode = false;
     selectedFood = null;
     elements.foodForm.classList.remove("is-custom-mode", "is-serving-edit");
@@ -2575,6 +2681,17 @@ if (elements.barcodeLookupButton) {
   elements.barcodeLookupButton.addEventListener("click", lookupBarcodeFood);
 }
 
+if (elements.barcodeScanButton) {
+  elements.barcodeScanButton.addEventListener("click", startBarcodeScanner);
+}
+
+if (elements.barcodeStopScanButton) {
+  elements.barcodeStopScanButton.addEventListener("click", () => {
+    stopBarcodeScanner();
+    setFoodSearchStatus("Scanner stopped. Enter or scan another barcode.");
+  });
+}
+
 if (elements.barcodeLookupInput) {
   elements.barcodeLookupInput.addEventListener("input", () => {
     elements.barcodeLookupInput.value = elements.barcodeLookupInput.value.replace(/[^\d\s-]/g, "");
@@ -2591,6 +2708,9 @@ if (elements.barcodeLookupInput) {
 
 elements.foodTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
+    if (activeFoodTab === "barcode" && tab.dataset.foodTab !== "barcode") {
+      stopBarcodeScanner();
+    }
     activeFoodTab = tab.dataset.foodTab || "all";
     elements.foodTabs.forEach((item) => item.classList.toggle("is-active", item === tab));
     isCustomFoodMode = false;
