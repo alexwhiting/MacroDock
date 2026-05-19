@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#10241a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="MacroDock" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Add Food - MacroDock</title>
+    <script>
+      document.documentElement.dataset.theme = localStorage.getItem("macrodock-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    </script>
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="icon" href="./macrodock-logo.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="./macrodock-logo.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="page-food-entry">
+    <main class="food-entry-main">
+      <section class="food-entry-shell" aria-labelledby="foodDialogTitle">
+        <div class="food-sheet-head">
+          <button id="backToFoodSearch" class="icon-button food-back-icon" type="button" aria-label="Back to food search" hidden>‹</button>
+          <strong id="foodDialogTitle">Add food</strong>
+          <button id="closeFoodForm" class="icon-button food-close-icon" type="button" aria-label="Close food form">&times;</button>
+        </div>
+        <form id="foodForm" class="stacked-form">
+          <div id="foodSearchView" class="food-search-view">
+            <label class="food-search-wrap">
+              <span aria-hidden="true">⌕</span>
+              <input id="foodSearch" type="search" autocomplete="off" placeholder="Search foods, brands, flavors..." />
+            </label>
+            <div class="food-tabs" role="tablist" aria-label="Food sources">
+              <button class="food-tab is-active" type="button" data-food-tab="all">All</button>
+              <button class="food-tab" type="button" data-food-tab="history">History</button>
+              <button class="food-tab" type="button" data-food-tab="barcode">Barcode</button>
+            </div>
+            <div id="barcodeLookupPanel" class="barcode-lookup-panel" hidden>
+              <label>
+                Barcode number
+                <input id="barcodeLookupInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter UPC or EAN" />
+              </label>
+              <div class="barcode-actions">
+                <button id="barcodeLookupButton" class="primary-button" type="button">Find food</button>
+                <button id="barcodeScanButton" class="ghost-button barcode-scan-button" type="button">Scan</button>
+              </div>
+              <div id="barcodeScannerPanel" class="barcode-scanner-panel" hidden>
+                <video id="barcodeScannerVideo" playsinline muted></video>
+                <div class="barcode-scan-frame" aria-hidden="true"></div>
+                <button id="barcodeStopScanButton" class="ghost-button" type="button">Stop scanner</button>
+              </div>
+            </div>
+            <p id="foodSearchStatus" class="food-search-status" hidden></p>
+            <div id="foodResults" class="food-results" aria-live="polite"></div>
+          </div>
+          <div id="foodDetailView" class="food-detail-view" hidden>
+            <section class="selected-food-hero" aria-live="polite">
+              <h3 id="selectedFoodName">Food</h3>
+              <p id="selectedFoodSource"></p>
+            </section>
+            <div class="food-log-controls detail-control-list">
+              <label>
+                <span>Serving size</span>
+                <output id="selectedServingBase">1 serving</output>
+              </label>
+              <label>
+                <span>Number of servings</span>
+                <input id="servingSize" type="number" min="0.25" step="0.25" value="1" />
+              </label>
+              <label>
+                <span>Meal</span>
+                <select id="mealSelect">
+                  <option>Breakfast</option>
+                  <option>Lunch</option>
+                  <option>Dinner</option>
+                  <option>Snack</option>
+                </select>
+              </label>
+            </div>
+            <div id="selectedFoodMacros" class="selected-food-macros"></div>
+          </div>
+          <button id="useCustomFood" class="ghost-button" type="button">Add custom food</button>
+          <div id="customFoodFields" class="custom-food-fields" hidden>
+            <label>
+              Food name
+              <input id="customFoodName" type="text" placeholder="Example: Banana" />
+            </label>
+            <label>
+              Serving size
+              <input id="customServingLabel" type="text" placeholder="Example: 100g, 1 bar, 1 cup" />
+            </label>
+            <div class="two-column">
+              <label>Calories<input id="customCalories" type="number" min="0" step="1" value="0" /></label>
+              <label>Protein (g)<input id="customProtein" type="number" min="0" step="0.1" value="0" /></label>
+              <label>Carbs (g)<input id="customCarbs" type="number" min="0" step="0.1" value="0" /></label>
+              <label>Fat (g)<input id="customFat" type="number" min="0" step="0.1" value="0" /></label>
+              <label>Fiber (g)<input id="customFiber" type="number" min="0" step="0.1" value="0" /></label>
+              <label>Sodium (mg)<input id="customSodium" type="number" min="0" step="1" value="0" /></label>
+              <label>Calcium (mg)<input id="customCalcium" type="number" min="0" step="1" value="0" /></label>
+              <label>Iron (mg)<input id="customIron" type="number" min="0" step="0.1" value="0" /></label>
+              <label>Vitamin C (mg)<input id="customVitaminC" type="number" min="0" step="1" value="0" /></label>
+              <label>Potassium (mg)<input id="customPotassium" type="number" min="0" step="1" value="0" /></label>
+            </div>
+          </div>
+          <button id="foodSubmitButton" class="primary-button" type="submit">Log food</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="./foods.js"></script>
+    <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

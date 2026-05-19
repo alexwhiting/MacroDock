@@ -1086,8 +1086,12 @@ function isOnboardingPage() {
   return currentPageFile() === "onboarding.html";
 }
 
+function isFoodEntryPage() {
+  return currentPageFile() === "add-food.html";
+}
+
 function isProtectedPage() {
-  return ["", "index.html", "settings.html", "progress.html", "social.html", "onboarding.html"].includes(currentPageFile());
+  return ["", "index.html", "settings.html", "progress.html", "social.html", "onboarding.html", "add-food.html"].includes(currentPageFile());
 }
 
 function redirectAfterAuth() {
@@ -1788,7 +1792,61 @@ function logFoodToMeal(food, servings = 1) {
   }
 
   addRecentFood(food);
-  render();
+  if (elements.remainingCalories) {
+    render();
+    closeFoodEntry();
+    return;
+  }
+
+  localStorage.setItem(activeStateStorageKey, JSON.stringify(state));
+  saveSupabaseDiaryDay()
+    .catch((error) => {
+      console.warn("Diary cloud save failed", error);
+    })
+    .finally(closeFoodEntry);
+}
+
+function foodEntryUrl(params = {}) {
+  const query = new URLSearchParams();
+  query.set("return", currentPageFile() || "index.html");
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, value);
+    }
+  });
+  return `./add-food.html${query.toString() ? `?${query.toString()}` : ""}`;
+}
+
+function openFoodEntry(params = {}) {
+  window.location.href = foodEntryUrl(params);
+}
+
+function closeFoodEntry() {
+  stopBarcodeScanner();
+
+  if (isFoodEntryPage()) {
+    const params = new URLSearchParams(window.location.search);
+    const returnPage = params.get("return") || "index.html";
+    const safeReturnPage = ["index.html", "settings.html", "progress.html", "social.html"].includes(returnPage)
+      ? returnPage
+      : "index.html";
+
+    let hasSameOriginReferrer = false;
+    try {
+      hasSameOriginReferrer = Boolean(document.referrer) && new URL(document.referrer).origin === window.location.origin;
+    } catch {
+      hasSameOriginReferrer = false;
+    }
+
+    if (window.history.length > 1 && hasSameOriginReferrer) {
+      window.history.back();
+      return;
+    }
+
+    window.location.href = `./${safeReturnPage}`;
+    return;
+  }
+
   setFoodDialogOpen(false);
 }
 
@@ -2546,6 +2604,10 @@ function setCustomFoodMode(isCustom, shouldFocus = true) {
 }
 
 function setFoodDialogOpen(isOpen) {
+  if (!elements.foodDialog) {
+    return;
+  }
+
   elements.foodDialog.setAttribute("aria-hidden", String(!isOpen));
   document.body.classList.toggle("dialog-open", isOpen);
 
@@ -2584,6 +2646,33 @@ function setFoodDialogOpen(isOpen) {
   }
 }
 
+function setupFoodEntryPageFromUrl() {
+  if (!isFoodEntryPage() || !elements.foodForm) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const meal = params.get("meal");
+  const editIndex = params.get("edit");
+
+  if (meal && elements.mealSelect) {
+    elements.mealSelect.value = meal;
+  }
+
+  if (editIndex !== null) {
+    editLoggedFood(editIndex);
+    return;
+  }
+
+  activeFoodTab = "all";
+  elements.foodTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.foodTab === activeFoodTab));
+  latestFoodSearchToken++;
+  barcodeLookupToken++;
+  resetCustomFoodFields();
+  resetFoodDetailView();
+  setCustomFoodMode(false, false);
+}
+
 function resetCustomFoodFields() {
   elements.customFoodName.value = "";
   elements.customServingLabel.value = "";
@@ -2615,6 +2704,11 @@ function populateCustomFoodFields(food) {
 }
 
 function editLoggedFood(index) {
+  if (!isFoodEntryPage()) {
+    openFoodEntry({ edit: index });
+    return;
+  }
+
   const loggedFood = state.foods[Number(index)];
 
   if (!loggedFood) {
@@ -2628,7 +2722,6 @@ function editLoggedFood(index) {
   elements.mealSelect.disabled = false;
   elements.servingSize.value = loggedFood.servings || 1;
   elements.foodSearch.value = loggedFood.name || "";
-  setFoodDialogOpen(true);
   elements.foodForm.classList.remove("is-custom-mode");
   elements.foodForm.classList.add("is-serving-edit");
   elements.customFoodFields.hidden = true;
@@ -2806,14 +2899,14 @@ if (elements.backToFoodSearch) {
 
 if (elements.closeFoodForm) {
   elements.closeFoodForm.addEventListener("click", () => {
-  setFoodDialogOpen(false);
+  closeFoodEntry();
 });
 }
 
 if (elements.foodDialog) {
   elements.foodDialog.addEventListener("click", (event) => {
   if (event.target === elements.foodDialog) {
-    setFoodDialogOpen(false);
+    closeFoodEntry();
   }
 });
 }
@@ -2922,11 +3015,10 @@ if (elements.nextDiaryDate) {
 if (elements.mealSections) {
   elements.mealSections.addEventListener("click", (event) => {
     const addBtn = event.target.closest("[data-meal-add]");
-    if (!addBtn || !elements.mealSelect) {
+    if (!addBtn) {
       return;
     }
-    elements.mealSelect.value = addBtn.getAttribute("data-meal-add") || "Breakfast";
-    setFoodDialogOpen(true);
+    openFoodEntry({ meal: addBtn.getAttribute("data-meal-add") || "Breakfast" });
   });
 }
 
@@ -2954,7 +3046,7 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (elements.foodDialog && event.key === "Escape" && elements.foodDialog.getAttribute("aria-hidden") === "false") {
-    setFoodDialogOpen(false);
+    closeFoodEntry();
   }
 });
 
@@ -3023,6 +3115,11 @@ document.querySelectorAll(".nav-item").forEach((link) => {
 });
 
 window.addEventListener("hashchange", syncNavActive);
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && navPageKey() === "home") {
+    renderCurrentPageFromCache();
+  }
+});
 syncNavActive();
 
 function watchDateRollover() {
@@ -3054,6 +3151,7 @@ function renderCurrentPageFromCache() {
   if (elements.foodSearch) {
     renderFoodSearch();
     render();
+    setupFoodEntryPageFromUrl();
     watchDateRollover();
   }
 

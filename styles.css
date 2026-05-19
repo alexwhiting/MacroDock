@@ -757,6 +757,30 @@ select:focus {
   margin-bottom: 16px;
 }
 
+.food-entry-main {
+  min-height: 100vh;
+  padding: calc(16px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom));
+}
+
+.food-entry-shell {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  padding: 4px 0 24px;
+}
+
+.page-food-entry .food-sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -14px 16px;
+  padding: 8px 14px 12px;
+  background: var(--bg);
+}
+
+.page-food-entry #foodForm {
+  padding-bottom: 16px;
+}
+
 .food-sheet-head .icon-button {
   width: 48px;
   height: 48px;
