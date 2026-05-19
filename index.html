@@ -94,30 +94,23 @@
         <div class="dashboard-sketch-column">
           <section id="dashboard" class="dashboard-stack" aria-label="Daily dashboard">
             <article class="panel calorie-dashboard-card calorie-panel">
-              <div class="calorie-dashboard-copy">
-                <span class="eyebrow">Calories remaining</span>
-                <p class="calorie-dashboard-big" id="remainingCalories">Set goal</p>
-                <p class="calorie-dashboard-sub">
-                  <span id="consumedCalories">0</span> eaten - <span id="burnedCalories">0</span> burned
-                </p>
-              </div>
-              <div class="ring-wrap" aria-label="Calorie progress">
-                <svg class="progress-ring" viewBox="0 0 120 120" role="img">
-                  <circle class="ring-track" cx="60" cy="60" r="50"></circle>
-                  <circle id="calorieRing" class="ring-progress" cx="60" cy="60" r="50"></circle>
-                </svg>
-                <span id="caloriePercent">0%</span>
-              </div>
-            </article>
-
-            <article class="panel macro-panel">
-              <div class="section-heading">
-                <div>
-                  <span class="eyebrow">Macros</span>
-                  <h2>Daily Breakdown</h2>
+              <div class="calorie-dashboard-topline">
+                <div class="calorie-dashboard-copy">
+                  <span class="eyebrow">Calories remaining</span>
+                  <p class="calorie-dashboard-big" id="remainingCalories">Set goal</p>
+                  <p class="calorie-dashboard-sub">
+                    <span id="consumedCalories">0</span> eaten - <span id="burnedCalories">0</span> burned
+                  </p>
+                </div>
+                <div class="ring-wrap" aria-label="Calorie progress">
+                  <svg class="progress-ring" viewBox="0 0 120 120" role="img">
+                    <circle class="ring-track" cx="60" cy="60" r="50"></circle>
+                    <circle id="calorieRing" class="ring-progress" cx="60" cy="60" r="50"></circle>
+                  </svg>
+                  <span id="caloriePercent">0%</span>
                 </div>
               </div>
-              <div id="macroBars" class="macro-list"></div>
+              <div id="macroBars" class="macro-list dashboard-macro-list"></div>
             </article>
 
             <article class="panel log-panel" id="food">

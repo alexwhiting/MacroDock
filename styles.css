@@ -1,52 +1,56 @@
 :root {
   color-scheme: light;
-  --bg: #f6f7f4;
+  --bg: #f7f7f8;
   --surface: #ffffff;
-  --surface-muted: #edf2ee;
-  --ink: #17211b;
-  --muted: #65736c;
-  --line: #dce3dd;
-  --sidebar: #10241a;
+  --surface-muted: #f0f1f3;
+  --ink: #17171b;
+  --muted: #74727c;
+  --line: #e7e7ea;
+  --sidebar: #24222a;
   --sidebar-soft: rgba(255, 255, 255, 0.06);
   --sidebar-line: rgba(255, 255, 255, 0.12);
-  --brand-bg: #62c784;
-  --brand-ink: #10241a;
-  --green: #277a4d;
-  --green-dark: #175a38;
-  --teal: #0f7f7a;
-  --gold: #b88212;
-  --red: #ba4d45;
-  --log-bg: #fbfcfa;
-  --danger-bg: #fff7f6;
-  --danger-line: #f0cbc8;
+  --brand-bg: #6fdc92;
+  --brand-ink: #121217;
+  --green: #56c77b;
+  --green-dark: #238950;
+  --teal: #56c77b;
+  --pink: #56c77b;
+  --gold: #56c77b;
+  --red: #d4554e;
+  --log-bg: #f4f4f6;
+  --danger-bg: #fff3f2;
+  --danger-line: #f1beb9;
   --button-bg: #ffffff;
-  --shadow: 0 18px 48px rgba(39, 63, 49, 0.12);
+  --shadow: 0 12px 32px rgba(17, 17, 22, 0.06);
+  --panel-accent: var(--green);
 }
 
 :root[data-theme="dark"],
 body[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101512;
-  --surface: #17211b;
-  --surface-muted: #253229;
-  --ink: #edf5ef;
-  --muted: #a7b8ad;
-  --line: #2e3c33;
-  --sidebar: #0a130e;
+  --bg: #18151d;
+  --surface: #24212b;
+  --surface-muted: #302c38;
+  --ink: #f6f3f8;
+  --muted: #aaa4b2;
+  --line: #373240;
+  --sidebar: #18151d;
   --sidebar-soft: rgba(255, 255, 255, 0.08);
   --sidebar-line: rgba(255, 255, 255, 0.14);
-  --brand-bg: #79d89b;
-  --brand-ink: #07100b;
-  --green: #79d89b;
-  --green-dark: #a5e6ba;
-  --teal: #5ecfc8;
-  --gold: #e3ba5f;
-  --red: #ff928b;
-  --log-bg: #121a16;
-  --danger-bg: #2b1718;
-  --danger-line: #6d3434;
-  --button-bg: #17211b;
-  --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --brand-bg: #73df98;
+  --brand-ink: #101116;
+  --green: #73df98;
+  --green-dark: #91ecad;
+  --teal: #73df98;
+  --pink: #73df98;
+  --gold: #73df98;
+  --red: #ff8b84;
+  --log-bg: #2c2833;
+  --danger-bg: #311a1c;
+  --danger-line: #71363b;
+  --button-bg: #302c38;
+  --shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+  --panel-accent: var(--green);
 }
 
 * {
@@ -65,6 +69,11 @@ body {
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   transition: background 160ms ease, color 160ms ease;
+}
+
+:root[data-theme="dark"] body,
+body[data-theme="dark"] {
+  background: var(--bg);
 }
 
 .page-home.is-hydrating .main-dashboard {
@@ -145,9 +154,9 @@ button {
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  border-radius: 999px;
+  border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.055);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -155,7 +164,7 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-radius: 999px;
+  border-radius: 8px;
   color: rgba(255, 255, 255, 0.78);
   padding: 10px 14px;
   text-decoration: none;
@@ -193,7 +202,8 @@ button {
 }
 
 .nav-item.active {
-  background: rgba(98, 199, 132, 0.22);
+  background: rgba(111, 220, 146, 0.16);
+  color: #ffffff;
 }
 
 :root[data-theme="dark"] .nav-item.active,
@@ -360,6 +370,12 @@ body[data-theme="dark"] .dashboard-date-button:hover {
 }
 
 .calorie-dashboard-card {
+  display: grid;
+  gap: 20px;
+  background: var(--surface);
+}
+
+.calorie-dashboard-topline {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -384,6 +400,11 @@ body[data-theme="dark"] .dashboard-date-button:hover {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--muted);
+}
+
+.dashboard-macro-list {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
 }
 
 .micros-dashboard-stack {
@@ -467,7 +488,7 @@ body[data-theme="dark"] .dashboard-date-button:hover {
 
 .meal-block {
   border-bottom: 1px solid var(--line);
-  padding: 12px 0 14px;
+  padding: 14px 0 16px;
 }
 
 .meal-block:last-child {
@@ -512,10 +533,10 @@ body[data-theme="dark"] .dashboard-date-button:hover {
   width: 40px;
   height: 40px;
   padding: 0;
-  border: none;
+  border: 1px solid var(--line);
   border-radius: 50%;
-  background: var(--green);
-  color: white;
+  background: var(--surface-muted);
+  color: var(--green-dark);
   font-size: 1.45rem;
   font-weight: 700;
   line-height: 1;
@@ -547,11 +568,16 @@ body[data-theme="dark"] .dashboard-date-button:hover {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-left-width: 1px;
+  border-radius: 8px;
+  background: var(--log-bg);
   cursor: pointer;
+}
+
+.meal-food-row:hover {
+  border-color: var(--line);
 }
 
 .meal-food-main {
@@ -614,10 +640,17 @@ body[data-theme="dark"] .dashboard-date-button:hover {
 
 .panel,
 .summary-panel {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.panel::before,
+.summary-panel::before {
+  display: none;
 }
 
 .summary-panel {
@@ -695,7 +728,7 @@ select {
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--button-bg);
   color: var(--ink);
   font-size: 16px;
   padding: 0 12px;
@@ -704,7 +737,7 @@ select {
 input:focus,
 select:focus {
   border-color: var(--green);
-  outline: 3px solid rgba(39, 122, 77, 0.14);
+  outline: 3px solid color-mix(in srgb, var(--green) 22%, transparent);
 }
 
 .sr-only {
@@ -775,6 +808,7 @@ select:focus {
   border-radius: 999px;
   padding-left: 52px;
   font-size: 16px;
+  background: var(--surface-muted);
 }
 
 .food-tabs {
@@ -910,7 +944,7 @@ select:focus {
 .selected-food-hero {
   display: grid;
   gap: 6px;
-  padding: 4px 0 22px;
+  padding: 6px 0 24px;
 }
 
 .selected-food-hero h3 {
@@ -1058,7 +1092,7 @@ select:focus {
 
 .food-result-button.is-selected {
   border-color: var(--green);
-  outline: 3px solid rgba(39, 122, 77, 0.14);
+  outline: 3px solid color-mix(in srgb, var(--green) 22%, transparent);
 }
 
 .food-add-circle {
@@ -1067,8 +1101,8 @@ select:focus {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: var(--surface-muted);
-  color: var(--green);
+  background: var(--surface);
+  color: var(--green-dark);
   font-size: 1.8rem;
   font-weight: 500;
 }
@@ -1118,7 +1152,7 @@ select:focus {
 .primary-button {
   border: 0;
   background: var(--green);
-  color: white;
+  color: #ffffff;
 }
 
 .primary-button:hover {
@@ -1245,7 +1279,7 @@ body.dialog-open {
   stroke-linecap: round;
   stroke-dasharray: 314;
   stroke-dashoffset: 314;
-  filter: drop-shadow(0 0 5px rgba(39, 122, 77, 0.35));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--green) 36%, transparent));
   transition: stroke-dashoffset 700ms cubic-bezier(0.2, 0.8, 0.2, 1), stroke 180ms ease;
 }
 
@@ -1279,7 +1313,7 @@ body.dialog-open {
   width: 0%;
   height: 100%;
   border-radius: inherit;
-  background: var(--teal);
+  background: var(--green);
   transition: width 180ms ease;
 }
 
@@ -1438,6 +1472,10 @@ body.dialog-open {
   transform: rotate(90deg);
 }
 
+.settings-section-head[aria-expanded="true"] .settings-section-icon {
+  color: var(--green-dark);
+}
+
 .settings-section-body {
   display: grid;
   gap: 14px;
@@ -1477,7 +1515,7 @@ body.dialog-open {
   min-height: 48px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--log-bg);
   color: var(--ink);
   padding: 12px 14px;
 }
@@ -1843,9 +1881,9 @@ body.dialog-open {
     z-index: 0;
     width: calc((100% - 16px - 6px) / 4);
     border-radius: 999px;
-    background: rgba(98, 199, 132, 0.2);
+    background: var(--surface-muted);
     transform: translateX(calc(var(--active-tab-index, 0) * (100% + 2px)));
-    box-shadow: 0 8px 18px rgba(39, 122, 77, 0.12);
+    box-shadow: 0 8px 18px rgba(21, 25, 29, 0.1);
     transition: none;
   }
 
@@ -1904,8 +1942,8 @@ body.dialog-open {
 
   :root[data-theme="dark"] .nav-list::before,
   body[data-theme="dark"] .nav-list::before {
-    background: rgba(121, 216, 155, 0.14);
-    box-shadow: 0 8px 18px rgba(121, 216, 155, 0.12);
+    background: var(--surface-muted);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
   }
 
   :root[data-theme="dark"] .nav-item.active,
@@ -2028,6 +2066,10 @@ body.dialog-open {
   }
 
   .calorie-dashboard-card {
+    display: grid;
+  }
+
+  .calorie-dashboard-topline {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
