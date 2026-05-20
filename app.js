@@ -269,6 +269,7 @@ let diarySaveTimer = null;
 let caloriePercentDisplay = 0;
 let caloriePercentFrame = null;
 let editingFoodIndex = null;
+let foodEntryReadyPromise = Promise.resolve();
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -1964,6 +1965,32 @@ function setFoodSearchStatus(message = "") {
   elements.foodSearchStatus.textContent = message;
 }
 
+function setFoodEntryBusy(isBusy, message = "") {
+  if (elements.foodSubmitButton) {
+    elements.foodSubmitButton.disabled = isBusy || (!selectedFood && !isCustomFoodMode);
+  }
+
+  if (elements.useCustomFood) {
+    elements.useCustomFood.disabled = isBusy;
+  }
+
+  if (elements.foodSearch) {
+    elements.foodSearch.disabled = isBusy;
+  }
+
+  if (elements.barcodeLookupButton) {
+    elements.barcodeLookupButton.disabled = isBusy;
+  }
+
+  if (elements.barcodeScanButton) {
+    elements.barcodeScanButton.disabled = isBusy;
+  }
+
+  if (message) {
+    setFoodSearchStatus(message);
+  }
+}
+
 function updateFoodSourceControls() {
   const isBarcode = activeFoodTab === "barcode";
   if (elements.barcodeLookupPanel) {
@@ -2671,6 +2698,7 @@ function setupFoodEntryPageFromUrl() {
   resetCustomFoodFields();
   resetFoodDetailView();
   setCustomFoodMode(false, false);
+  setFoodEntryBusy(false);
 }
 
 function resetCustomFoodFields() {
@@ -2750,11 +2778,14 @@ function customFoodFromForm() {
 }
 
 if (elements.foodForm) {
-  elements.foodForm.addEventListener("submit", (event) => {
+  elements.foodForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  setFoodEntryBusy(true, "Saving food...");
+  await foodEntryReadyPromise.catch(() => null);
   const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
   if (!food) {
     elements.foodSearchStatus.textContent = "Select a food or add a custom food first.";
+    setFoodEntryBusy(false);
     return;
   }
   const servings = Math.max(Number(elements.servingSize.value), 0.25);
@@ -2770,6 +2801,8 @@ if (elements.foodForm) {
 
 if (elements.servingSize) {
   elements.servingSize.addEventListener("input", renderSelectedFoodDetail);
+  elements.servingSize.addEventListener("focus", () => elements.servingSize.select());
+  elements.servingSize.addEventListener("click", () => elements.servingSize.select());
 }
 
 if (elements.customFoodFields) {
@@ -3206,21 +3239,39 @@ async function initializeApp() {
     return;
   }
 
-  renderCurrentPageFromCache();
+  if (isFoodEntryPage()) {
+    setFoodEntryBusy(true, "Loading your diary...");
+  }
 
-  runtimeConfigPromise
+  foodEntryReadyPromise = runtimeConfigPromise
     .then(() => loadRemoteAccount())
     .then((account) => {
       if (isProtectedPage() && !getAuthToken()) {
         redirectToAuth();
-        return;
+        return null;
       }
 
       redirectAuthenticatedUserWithoutAccount(account);
+      return account;
     })
     .catch((error) => {
       console.warn("Background account refresh failed", error);
+      return null;
     });
+
+  if (isFoodEntryPage()) {
+    foodEntryReadyPromise.then(() => {
+      setupFoodEntryPageFromUrl();
+    });
+  } else {
+    renderCurrentPageFromCache();
+  }
+
+  if (!isFoodEntryPage()) {
+    foodEntryReadyPromise.catch((error) => {
+      console.warn("Background account refresh failed", error);
+    });
+  }
 }
 
 initializeApp();
