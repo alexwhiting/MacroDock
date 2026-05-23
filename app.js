@@ -270,6 +270,7 @@ let caloriePercentDisplay = 0;
 let caloriePercentFrame = null;
 let editingFoodIndex = null;
 let foodEntryReadyPromise = Promise.resolve();
+let feedbackAudioContext = null;
 const runtimeConfig = {
   supabaseUrl: "https://ulmwocfyvocswblavfdj.supabase.co",
   supabaseAnonKey: "sb_publishable_BejLt2fZxPutp8uo5M5PLw_kjLpzhFY"
@@ -1851,6 +1852,40 @@ function closeFoodEntry() {
   setFoodDialogOpen(false);
 }
 
+function playFoodLogFeedback() {
+  if (navigator.vibrate) {
+    navigator.vibrate(12);
+  }
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return;
+    }
+
+    feedbackAudioContext = feedbackAudioContext || new AudioContextClass();
+    if (feedbackAudioContext.state === "suspended") {
+      feedbackAudioContext.resume();
+    }
+    const now = feedbackAudioContext.currentTime;
+    const oscillator = feedbackAudioContext.createOscillator();
+    const gain = feedbackAudioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(520, now);
+    oscillator.frequency.exponentialRampToValueAtTime(760, now + 0.035);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.025, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055);
+    oscillator.connect(gain);
+    gain.connect(feedbackAudioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.06);
+  } catch {
+    // Audio feedback is optional; vibration/manual UI feedback still applies.
+  }
+}
+
 function foodPerServing(loggedFood) {
   const servings = Math.max(Number(loggedFood.servings) || 1, 0.25);
   const food = { ...loggedFood };
@@ -2780,14 +2815,15 @@ function customFoodFromForm() {
 if (elements.foodForm) {
   elements.foodForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  setFoodEntryBusy(true, "Saving food...");
-  await foodEntryReadyPromise.catch(() => null);
   const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
   if (!food) {
     elements.foodSearchStatus.textContent = "Select a food or add a custom food first.";
     setFoodEntryBusy(false);
     return;
   }
+  playFoodLogFeedback();
+  setFoodEntryBusy(true, "Saving food...");
+  await foodEntryReadyPromise.catch(() => null);
   const servings = Math.max(Number(elements.servingSize.value), 0.25);
   const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
   if (isCustomFoodMode) {
@@ -3144,12 +3180,37 @@ document.querySelectorAll(".nav-item").forEach((link) => {
       event.preventDefault();
       return;
     }
+
+    document.body.classList.add("is-navigating");
   });
+});
+
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("a[href]");
+  if (!link || link.target || link.hasAttribute("download")) {
+    return;
+  }
+
+  const href = link.getAttribute("href") || "";
+  if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+    return;
+  }
+
+  try {
+    const url = new URL(href, window.location.href);
+    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+      document.body.classList.add("is-navigating");
+    }
+  } catch {
+    // Ignore malformed links; browser default handling still applies.
+  }
 });
 
 window.addEventListener("hashchange", syncNavActive);
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted && navPageKey() === "home") {
+  if (navPageKey() === "home") {
+    restoreAuthStateOwner();
+    replaceDiaryState(readStoredState(activeStateStorageKey));
     renderCurrentPageFromCache();
   }
 });
