@@ -218,8 +218,13 @@ async function handleAccountUpdate(request, response) {
   const users = readUsers();
   const user = users.find((candidate) => candidate.id === authedUser.id);
 
+  if (typeof account.name === "string" && account.name.trim()) {
+    user.name = account.name.trim();
+  }
+
   user.account = {
     ...account,
+    name: account.name || user.name,
     updatedAt: new Date().toISOString()
   };
 

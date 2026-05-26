@@ -812,7 +812,7 @@ function saveAccountFromForm(event) {
     preferences: collectSettingsPreferences()
   };
   const targets = calculateAccountTargets(accountInput);
-  const account = { ...accountInput, ...targets };
+  const account = { ...accountInput, ...targets, updatedAt: new Date().toISOString() };
 
   localStorage.setItem("macrodock-account", JSON.stringify(account));
   applyStoredPreferences(account);
