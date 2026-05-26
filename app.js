@@ -677,7 +677,7 @@ function renderTargetSummary() {
   const calorieTarget = getCalorieGoal();
 
   if (elements.targetCalories) {
-    elements.targetCalories.textContent = calorieTarget ? `${formatNumber(calorieTarget)} kcal` : "Set goal";
+    elements.targetCalories.textContent = calorieTarget ? `${formatNumber(calorieTarget)} kcal` : "No target";
   }
 
   if (elements.profilePlanText) {
@@ -879,12 +879,7 @@ function saveAccountFromForm(event) {
 }
 
 function redirectAuthenticatedUserWithoutAccount(account) {
-  if (!isProtectedPage() || isAuthPage() || isOnboardingPage() || account || storedAccount() || !getAuthToken()) {
-    return false;
-  }
-
-  redirectToMetricsSetup();
-  return true;
+  return false;
 }
 
 function redirectOnboardingUserWithAccount() {
@@ -1103,7 +1098,7 @@ function redirectAfterAuth() {
 
 function redirectToMetricsSetup() {
   sessionStorage.removeItem("macrodock-post-auth");
-  window.location.href = "./onboarding.html";
+  window.location.href = "./index.html";
 }
 
 function redirectToAuth() {
@@ -1833,19 +1828,8 @@ function closeFoodEntry() {
       ? returnPage
       : "index.html";
 
-    let hasSameOriginReferrer = false;
-    try {
-      hasSameOriginReferrer = Boolean(document.referrer) && new URL(document.referrer).origin === window.location.origin;
-    } catch {
-      hasSameOriginReferrer = false;
-    }
-
-    if (window.history.length > 1 && hasSameOriginReferrer) {
-      window.history.back();
-      return;
-    }
-
-    window.location.href = `./${safeReturnPage}`;
+    sessionStorage.setItem("macrodock-food-log-updated", String(Date.now()));
+    window.location.replace(`./${safeReturnPage}`);
     return;
   }
 
@@ -1853,8 +1837,15 @@ function closeFoodEntry() {
 }
 
 function playFoodLogFeedback() {
+  elements.foodSubmitButton?.classList.add("is-haptic");
+  elements.foodForm?.classList.add("is-haptic");
+  window.setTimeout(() => {
+    elements.foodSubmitButton?.classList.remove("is-haptic");
+    elements.foodForm?.classList.remove("is-haptic");
+  }, 180);
+
   if (navigator.vibrate) {
-    navigator.vibrate(12);
+    navigator.vibrate([16, 24, 16]);
   }
 
   try {
@@ -2517,7 +2508,7 @@ function renderDashboard() {
   const workoutTotals = totalsFromWorkouts();
   const calorieGoal = getCalorieGoal();
   if (!calorieGoal) {
-    elements.remainingCalories.textContent = "Set goal";
+    elements.remainingCalories.textContent = "No target";
     elements.consumedCalories.textContent = formatNumber(foodTotals.calories);
     elements.burnedCalories.textContent = formatNumber(workoutTotals.calories);
     elements.calorieRing.style.strokeDashoffset = 314;
@@ -2814,25 +2805,27 @@ function customFoodFromForm() {
 
 if (elements.foodForm) {
   elements.foodForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
-  if (!food) {
-    elements.foodSearchStatus.textContent = "Select a food or add a custom food first.";
-    setFoodEntryBusy(false);
-    return;
-  }
-  playFoodLogFeedback();
-  setFoodEntryBusy(true, "Saving food...");
-  await foodEntryReadyPromise.catch(() => null);
-  const servings = Math.max(Number(elements.servingSize.value), 0.25);
-  const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
-  if (isCustomFoodMode) {
-    addCustomFood(foodToLog);
-  }
-  logFoodToMeal(foodToLog, servings);
-  elements.servingSize.value = "1";
-  resetCustomFoodFields();
-});
+    event.preventDefault();
+    const food = isCustomFoodMode ? customFoodFromForm() : selectedFood;
+    if (!food) {
+      elements.foodSearchStatus.textContent = "Select a food or add a custom food first.";
+      setFoodEntryBusy(false);
+      return;
+    }
+
+    playFoodLogFeedback();
+    setFoodEntryBusy(true, "Saving food...");
+    await foodEntryReadyPromise.catch(() => null);
+    restoreAuthStateOwner();
+    const servings = Math.max(Number(elements.servingSize.value), 0.25);
+    const foodToLog = isCustomFoodMode ? { ...food, source: "Custom" } : food;
+    if (isCustomFoodMode) {
+      addCustomFood(foodToLog);
+    }
+    logFoodToMeal(foodToLog, servings);
+    elements.servingSize.value = "1";
+    resetCustomFoodFields();
+  });
 }
 
 if (elements.servingSize) {
@@ -3169,8 +3162,80 @@ function syncNavActive() {
   });
 }
 
+function setNavActiveLink(activeLink) {
+  let activeIndex = 0;
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    const isActive = item === activeLink;
+    item.classList.toggle("active", isActive);
+    if (isActive) {
+      activeIndex = Array.from(item.parentElement.children).indexOf(item);
+    }
+  });
+  document.querySelectorAll(".nav-list").forEach((nav) => {
+    nav.style.setProperty("--active-tab-index", String(Math.max(activeIndex, 0)));
+  });
+}
+
+function warmNavDestination(href) {
+  try {
+    const url = new URL(href, window.location.href);
+    if (url.origin !== window.location.origin || url.pathname === window.location.pathname) {
+      return;
+    }
+
+    const selector = `link[rel="prefetch"][href="${url.href}"]`;
+    if (document.head.querySelector(selector)) {
+      return;
+    }
+
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = url.href;
+    link.as = "document";
+    document.head.append(link);
+  } catch {
+    // Ignore malformed hrefs; normal link handling still applies.
+  }
+}
+
+function warmNavDestinations() {
+  const urls = [];
+  document.querySelectorAll(".nav-item[href]").forEach((link) => {
+    const href = link.getAttribute("href") || "";
+    warmNavDestination(href);
+
+    try {
+      const url = new URL(href, window.location.href);
+      if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+        urls.push(url.href);
+      }
+    } catch {
+      // Ignore malformed hrefs.
+    }
+
+    link.addEventListener("pointerenter", () => warmNavDestination(href), { passive: true });
+    link.addEventListener("focus", () => warmNavDestination(href), { passive: true });
+  });
+
+  if (!urls.length || !HTMLScriptElement.supports?.("speculationrules")) {
+    return;
+  }
+
+  const rules = document.createElement("script");
+  rules.type = "speculationrules";
+  rules.textContent = JSON.stringify({
+    prerender: [{ source: "list", urls, eagerness: "moderate" }],
+    prefetch: [{ source: "list", urls, eagerness: "eager" }]
+  });
+  document.head.append(rules);
+}
+
 document.querySelectorAll(".nav-item").forEach((link) => {
   link.addEventListener("click", (event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      return;
+    }
+
     const href = link.getAttribute("href") || "";
     const currentPath = window.location.pathname.split("/").pop() || "index.html";
     const nextPath = href.split("#")[0].replace(/^\.\//, "") || currentPath;
@@ -3181,6 +3246,7 @@ document.querySelectorAll(".nav-item").forEach((link) => {
       return;
     }
 
+    setNavActiveLink(link);
     document.body.classList.add("is-navigating");
   });
 });
@@ -3208,6 +3274,7 @@ document.addEventListener("click", (event) => {
 
 window.addEventListener("hashchange", syncNavActive);
 window.addEventListener("pageshow", (event) => {
+  document.body.classList.remove("is-navigating");
   if (navPageKey() === "home") {
     restoreAuthStateOwner();
     replaceDiaryState(readStoredState(activeStateStorageKey));
@@ -3215,6 +3282,7 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 syncNavActive();
+warmNavDestinations();
 
 function watchDateRollover() {
   let lastToday = diaryTodayIso();
@@ -3241,6 +3309,11 @@ function renderCurrentPageFromCache() {
   applyStoredPreferences();
   renderAccountSettings();
   renderTargetSummary();
+  const foodLogUpdatedAt = sessionStorage.getItem("macrodock-food-log-updated");
+  if (foodLogUpdatedAt) {
+    sessionStorage.removeItem("macrodock-food-log-updated");
+    replaceDiaryState(readStoredState(activeStateStorageKey));
+  }
 
   if (elements.foodSearch) {
     renderFoodSearch();
@@ -3295,6 +3368,8 @@ async function initializeApp() {
     redirectToAuth();
     return;
   }
+
+  restoreAuthStateOwner();
 
   if (redirectOnboardingUserWithAccount()) {
     return;

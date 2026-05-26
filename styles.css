@@ -75,15 +75,16 @@ body {
 .main-content,
 .food-entry-shell,
 .coming-soon-content {
-  animation: page-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: page-enter 90ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
 }
 
 body.is-navigating .main-content,
 body.is-navigating .food-entry-shell,
 body.is-navigating .coming-soon-content {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  opacity: 0.98;
+  transform: translateY(0);
+  transition: opacity 60ms ease;
 }
 
 :root[data-theme="dark"] body,
@@ -91,11 +92,11 @@ body[data-theme="dark"] {
   background: var(--bg);
 }
 
-.page-home.is-hydrating .main-dashboard {
+.page-home.is-hydrating .app-shell {
   opacity: 0;
 }
 
-.page-home .main-dashboard {
+.page-home .app-shell {
   transition: opacity 140ms ease;
 }
 
@@ -122,11 +123,23 @@ button:active:not(:disabled),
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(2px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes haptic-pop {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(0.965);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -1233,6 +1246,10 @@ select:focus {
 .primary-button:hover {
   background: var(--green-dark);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+.primary-button.is-haptic {
+  animation: haptic-pop 180ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .primary-button:disabled,
